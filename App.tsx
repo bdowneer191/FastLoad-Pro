@@ -205,23 +205,24 @@ const App = () => {
   useEffect(() => {
     if (!userId) return;
 
+    // Temporarily disabled session fetching to allow for Vercel deployment.
     const fetchSessionData = async () => {
         setSessionLoadError('');
         try {
-            const response = await fetch(`/api/sessions?userId=${userId}`);
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Failed to fetch session data.' }));
-                throw new Error(errorData.message);
-            }
-            const data = await response.json();
-            setSessionLog(data);
+            // const response = await fetch(`/api/sessions?userId=${userId}`);
+            // if (!response.ok) {
+            //     const errorData = await response.json().catch(() => ({ message: 'Failed to fetch session data.' }));
+            //     throw new Error(errorData.message);
+            // }
+            // const data = await response.json();
+            // setSessionLog(data);
         } catch (error: any) {
             console.error("Failed to load session data:", error);
-            setSessionLoadError(`Could not load history: ${error.message}`);
+            // setSessionLoadError(`Could not load history: ${error.message}`);
         }
     };
 
-    fetchSessionData();
+    // fetchSessionData();
   }, [userId]);
   
   useEffect(() => {
@@ -278,20 +279,21 @@ const App = () => {
                     },
                     userId: userId,
                 };
-
-                const response = await fetch('/api/sessions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(completedSession)
-                });
                 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'The server returned an unexpected error. Check Vercel function logs for details.' }));
-                    throw new Error(errorData.message ? `Could not save session: ${errorData.message}` : 'Could not save session due to a server error.');
-                }
+                // Temporarily disabled session saving to allow for Vercel deployment.
+                // const response = await fetch('/api/sessions', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(completedSession)
+                // });
+                
+                // if (!response.ok) {
+                //     const errorData = await response.json().catch(() => ({ message: 'The server returned an unexpected error. Check Vercel function logs for details.' }));
+                //     throw new Error(errorData.message ? `Could not save session: ${errorData.message}` : 'Could not save session due to a server error.');
+                // }
 
-                const savedSession = await response.json();
-                setSessionLog(prevLog => [savedSession, ...prevLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()));
+                // const savedSession = await response.json();
+                // setSessionLog(prevLog => [savedSession, ...prevLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()));
                 
                 setCurrentSession(null);
                 
