@@ -34,8 +34,9 @@ export const formatDuration = (seconds: number): string => {
   return `${h}:${m}:${s}`;
 };
 
-export const isTodayInDhaka = (date: Date): boolean => {
-    const todayInDhaka = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka'}); // YYYY-MM-DD format
-    const dateInDhaka = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
-    return todayInDhaka === dateInDhaka;
-}
+export const isWithinLast24Hours = (date: Date): boolean => {
+    const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    return diff >= 0 && diff <= twentyFourHoursInMillis;
+};
