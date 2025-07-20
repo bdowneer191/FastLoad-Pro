@@ -41,6 +41,13 @@ export default async function handler(request: Request) {
                 }
 
                 const response = await fetch(existingBlob.url);
+                 if (!response.ok) {
+                  // If fetching the blob URL fails, assume it's empty or inaccessible
+                  return new Response(JSON.stringify([]), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                }
                 const sessions = await response.json();
                 
                 return new Response(JSON.stringify(sessions), {
@@ -49,7 +56,11 @@ export default async function handler(request: Request) {
                 });
             } catch (error: any) {
                 console.error('Vercel Blob GET Error:', error);
-                return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
+                 // Return an empty array on error to allow the app to function
+                return new Response(JSON.stringify([]), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                });
             }
             
         case 'POST':
@@ -94,7 +105,13 @@ export default async function handler(request: Request) {
             
         case 'DELETE':
              try {
-                await del(blobPath);
+                const { blobs } = await list({ prefix: blobPath, limit: 1 });
+                const blobToDelete = blobs.find(b => b.pathname === blobPath);
+
+                if (blobToDelete) {
+                    await del(blobToDelete.url);
+                }
+
                 return new Response(JSON.stringify({ message: 'Session history successfully cleared.' }), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' },
