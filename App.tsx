@@ -241,15 +241,15 @@ const App = () => {
         try {
             // Fetch API Keys
             const keysResponse = await fetch(`/api/user-data?userId=${userId}`);
-            if (keysResponse.ok) {
-                const keysData = await keysResponse.json();
-                setPageSpeedApiKey(keysData.pageSpeedApiKey || '');
-                setGeminiApiKey(keysData.geminiApiKey || '');
-                setIsEditingPageSpeedKey(!keysData.pageSpeedApiKey);
-                setIsEditingGeminiKey(!keysData.geminiApiKey);
-            } else {
-                 throw new Error('Failed to fetch API keys.');
+            if (!keysResponse.ok) {
+                 const errorData = await keysResponse.json().catch(() => ({ message: 'Failed to fetch API keys. The server response was not valid JSON.' }));
+                 throw new Error(errorData.message || 'Failed to fetch API keys due to a server error.');
             }
+            const keysData = await keysResponse.json();
+            setPageSpeedApiKey(keysData.pageSpeedApiKey || '');
+            setGeminiApiKey(keysData.geminiApiKey || '');
+            setIsEditingPageSpeedKey(!keysData.pageSpeedApiKey);
+            setIsEditingGeminiKey(!keysData.geminiApiKey);
 
             // Fetch Session History
             const sessionsResponse = await fetch(`/api/sessions?userId=${userId}`);

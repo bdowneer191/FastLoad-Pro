@@ -1,3 +1,4 @@
+
 import { put, list, del } from '@vercel/blob';
 import type { Session } from '../types';
 
@@ -25,8 +26,20 @@ export default async function handler(request: Request) {
             if (blobs.length === 0) {
                 return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
             }
-            const data = await fetch(blobs[0].url).then(res => res.json());
-            return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' }});
+            
+            try {
+                const response = await fetch(blobs[0].url);
+                if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
+                if (response.headers.get('content-length') === '0') {
+                     return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
+                }
+                const data = await response.json();
+                return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' }});
+            } catch (e) {
+                console.error(`Failed to read or parse session data for user ${userId}:`, e);
+                // If the blob is corrupt or unreadable, return an empty array to not break the client.
+                return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
+            }
         }
 
         if (request.method === 'POST') {
@@ -36,11 +49,16 @@ export default async function handler(request: Request) {
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
             if (blobs.length > 0) {
                 try {
-                    const existingData = await fetch(blobs[0].url).then(res => res.json());
-                    if (Array.isArray(existingData)) {
-                       sessions = existingData;
+                    const response = await fetch(blobs[0].url);
+                    if (response.ok && response.headers.get('content-length') !== '0') {
+                       const existingData = await response.json();
+                       if (Array.isArray(existingData)) {
+                          sessions = existingData;
+                       }
                     }
-                } catch (e) { /* File is empty or corrupt, start fresh */ }
+                } catch (e) { 
+                    console.error("Could not parse existing session data, starting new log.", e);
+                }
             }
             
             const sessionWithId: Session = { ...newSession, id: new Date().toISOString() };
