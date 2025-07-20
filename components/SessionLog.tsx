@@ -58,41 +58,11 @@ const SessionLog: React.FC<SessionLogProps> = ({ sessions, setSessions, userId }
     const displayedSessions = showAll ? sessions : todaySessions;
 
     const handleDownload = () => {
-        if (displayedSessions.length === 0) return;
-        
-        const csvData = convertToCSV(displayedSessions);
-        const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
-        link.setAttribute('href', url);
-        link.setAttribute('download', `FastLoadPro_History_${todayStr}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Temporarily disabled
     };
     
     const handleClear = async () => {
-        if (!userId || sessions.length === 0 || !window.confirm('Are you sure you want to permanently delete all your session history from the server? This action cannot be undone.')) {
-            return;
-        }
-        setIsClearing(true);
-        try {
-            const response = await fetch(`/api/sessions?userId=${userId}`, {
-                method: 'DELETE',
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to clear history.');
-            }
-            setSessions([]);
-        } catch (error: any) {
-            console.error('Error clearing sessions:', error);
-            alert(`Error: ${error.message}`);
-        } finally {
-            setIsClearing(false);
-        }
+        // Temporarily disabled
     };
 
 
@@ -111,7 +81,7 @@ const SessionLog: React.FC<SessionLogProps> = ({ sessions, setSessions, userId }
             >
                 <div className="border-t border-brand-border pt-4 text-brand-text-secondary text-sm space-y-4">
                    {sessions.length === 0 ? (
-                       <p>No completed sessions yet. Complete a full "Measure" and "Compare" cycle to log a session.</p>
+                       <p>No completed sessions yet. Complete a full "Measure" and "Compare" cycle to log a session. (History saving is temporarily disabled).</p>
                    ) : (
                        <>
                         <div className="p-4 bg-brand-background rounded-lg flex flex-wrap justify-between items-center gap-4">
@@ -130,21 +100,7 @@ const SessionLog: React.FC<SessionLogProps> = ({ sessions, setSessions, userId }
                                     {showAll ? 'Show Today Only' : `Show All History (${sessions.length})`}
                                 </button>
                              )}
-                             <button
-                                   onClick={handleDownload}
-                                   disabled={displayedSessions.length === 0}
-                                   className="flex items-center justify-center gap-1.5 text-sm py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:bg-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed"
-                               >
-                                  <Icon name="sheet" className="w-4 h-4" /> Download CSV
-                               </button>
-                               <button
-                                   onClick={handleClear}
-                                   disabled={isClearing || sessions.length === 0}
-                                   className="flex items-center justify-center gap-1.5 text-sm py-2 px-4 bg-brand-danger/80 hover:bg-brand-danger rounded-md transition-colors disabled:bg-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed"
-                               >
-                                   {isClearing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Icon name="trash" className="w-4 h-4" />}
-                                   Clear History
-                               </button>
+                              {/* Download and Clear buttons are removed as session history is disabled. */}
                            </div>
                        </div>
                         {displayedSessions.length > 0 ? (
