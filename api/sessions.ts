@@ -6,8 +6,9 @@ export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(request: Request) {
-    const { searchParams } = new URL(request.url);
+export default async function handler(req: Request) {
+    const { method, url } = req;
+    const { searchParams } = new URL(url);
     const userId = searchParams.get('userId');
 
     if (!userId) {
@@ -21,7 +22,7 @@ export default async function handler(request: Request) {
     const blobPath = `sessions/${userId}.json`;
 
     try {
-        if (request.method === 'GET') {
+        if (method === 'GET') {
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
             if (blobs.length === 0) {
                 return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
@@ -42,8 +43,8 @@ export default async function handler(request: Request) {
             }
         }
 
-        if (request.method === 'POST') {
-            const newSession: Omit<Session, 'id'> = await request.json();
+        if (method === 'POST') {
+            const newSession: Omit<Session, 'id'> = await req.json();
             
             let sessions: Session[] = [];
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -74,7 +75,7 @@ export default async function handler(request: Request) {
             return new Response(JSON.stringify(sessionWithId), { status: 200, headers: { 'Content-Type': 'application/json' }});
         }
         
-        if (request.method === 'DELETE') {
+        if (method === 'DELETE') {
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
             if(blobs.length > 0) {
                await del(blobs[0].url, { token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -82,7 +83,7 @@ export default async function handler(request: Request) {
             return new Response(JSON.stringify({ success: true, message: 'History cleared.' }), { status: 200, headers: { 'Content-Type': 'application/json' }});
         }
 
-        return new Response(`Method ${request.method} Not Allowed`, { status: 405, headers: { 'Content-Type': 'application/json' }});
+        return new Response(`Method ${method} Not Allowed`, { status: 405, headers: { 'Content-Type': 'application/json' }});
 
     } catch (error: any) {
         return new Response(JSON.stringify({ message: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' }});
