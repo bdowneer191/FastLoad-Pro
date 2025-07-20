@@ -11,6 +11,11 @@ export interface Session {
   userId: string;
 }
 
+export interface UserData {
+  geminiApiKey: string;
+  pageSpeedApiKey: string;
+}
+
 export interface CleaningOptions {
   stripComments: boolean;
   collapseWhitespace: boolean;
