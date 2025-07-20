@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Icon from './Icon.tsx';
-import { getDhakaDate, formatDuration, isTodayInDhaka } from '../utils/time.ts';
+import { getDhakaDate, formatDuration, isWithinLast24Hours } from '../utils/time.ts';
 import { Session } from '../types.ts';
 
 interface SessionLogProps {
@@ -51,20 +51,42 @@ const SessionLog: React.FC<SessionLogProps> = ({ sessions, setSessions, userId }
     const [isClearing, setIsClearing] = useState(false);
     const [showAll, setShowAll] = useState(false);
 
-    const todaySessions = useMemo(() => {
-        return sessions.filter(s => isTodayInDhaka(new Date(s.startTime)));
+    const last24HourSessions = useMemo(() => {
+        return sessions.filter(s => isWithinLast24Hours(new Date(s.startTime)));
     }, [sessions]);
 
-    const displayedSessions = showAll ? sessions : todaySessions;
+    const displayedSessions = showAll ? sessions : last24HourSessions;
 
     const handleDownload = () => {
-        // Temporarily disabled
+        const csv = convertToCSV(sessions);
+        if (!csv) return;
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `FastLoad-Pro_Session-History_${userId}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
     
     const handleClear = async () => {
-        // Temporarily disabled
+        if (!userId || !window.confirm('Are you sure you want to delete your entire session history? This action cannot be undone.')) return;
+        setIsClearing(true);
+        try {
+            const response = await fetch(`/api/sessions?userId=${userId}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to clear history' }));
+                throw new Error(errorData.message);
+            }
+            setSessions([]);
+        } catch (error: any) {
+            console.error('Error clearing history:', error);
+            alert(`Could not clear history: ${error.message}`);
+        } finally {
+            setIsClearing(false);
+        }
     };
-
 
     return (
         <div className="bg-brand-surface rounded-xl border border-brand-border">
@@ -81,26 +103,31 @@ const SessionLog: React.FC<SessionLogProps> = ({ sessions, setSessions, userId }
             >
                 <div className="border-t border-brand-border pt-4 text-brand-text-secondary text-sm space-y-4">
                    {sessions.length === 0 ? (
-                       <p>No completed sessions yet. Complete a full "Measure" and "Compare" cycle to log a session. (History saving is temporarily disabled).</p>
+                       <p>No completed sessions yet. Complete a full "Measure" and "Compare" cycle to log a session.</p>
                    ) : (
                        <>
                         <div className="p-4 bg-brand-background rounded-lg flex flex-wrap justify-between items-center gap-4">
                             <div>
                                 <h4 className="font-semibold text-brand-text-primary">Your Session Log</h4>
                                 <p className="text-xs text-brand-text-secondary mt-1">
-                                    {showAll ? `Showing all ${sessions.length} sessions.` : `Showing ${todaySessions.length} of ${sessions.length} total sessions from today.`}
+                                    {showAll ? `Showing all ${sessions.length} sessions.` : `Showing ${last24HourSessions.length} of ${sessions.length} total sessions from the last 24 hours.`}
                                 </p>
                             </div>
                            <div className="flex gap-2 flex-wrap">
-                             {sessions.length > todaySessions.length && (
+                             {sessions.length > last24HourSessions.length && (
                                 <button
                                     onClick={() => setShowAll(!showAll)}
                                     className="text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors"
                                 >
-                                    {showAll ? 'Show Today Only' : `Show All History (${sessions.length})`}
+                                    {showAll ? 'Show Last 24 Hours' : `Show All History (${sessions.length})`}
                                 </button>
                              )}
-                              {/* Download and Clear buttons are removed as session history is disabled. */}
+                              <button onClick={handleDownload} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
+                                <Icon name="sheet" className="w-4 h-4" /> Download CSV
+                              </button>
+                              <button onClick={handleClear} disabled={isClearing} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-danger/20 border border-brand-danger/50 text-brand-danger hover:bg-brand-danger/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isClearing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Icon name="trash" className="w-4 h-4" />} Clear History
+                              </button>
                            </div>
                        </div>
                         {displayedSessions.length > 0 ? (
