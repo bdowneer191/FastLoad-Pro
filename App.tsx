@@ -10,7 +10,6 @@ import { generateOptimizationPlan, generateComparisonAnalysis } from './services
 import { fetchPageSpeedReport } from './services/pageSpeedService.ts';
 import { Recommendation, Session, ImpactSummary } from './types.ts';
 
-
 const initialOptions = {
   stripComments: true,
   collapseWhitespace: true,
@@ -43,6 +42,33 @@ const Step = ({ number, title, children }) => (
             {title}
         </h2>
         <div className="pl-11">{children}</div>
+    </div>
+);
+
+const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSave }) => (
+    <div>
+        <label className="text-sm font-medium text-brand-text-secondary mb-1 block">{label}</label>
+        <div className="flex gap-2">
+            <input
+                type="password"
+                value={isEditing ? value : (value ? '••••••••••••••••••••••••••••••••••' : '')}
+                onChange={onChange}
+                readOnly={!isEditing}
+                placeholder={`Enter your ${label}`}
+                className="w-full p-3 pl-4 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors disabled:opacity-70"
+                autoComplete="new-password"
+                disabled={!isEditing || isSaving}
+            />
+             {isEditing ? (
+                <button onClick={onSave} disabled={isSaving || !value} className="flex items-center justify-center gap-2 w-28 py-3 px-4 bg-brand-success text-white rounded-lg font-semibold transition-all duration-300 disabled:bg-brand-surface disabled:text-brand-text-secondary">
+                    {isSaving ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Save'}
+                </button>
+            ) : (
+                <button onClick={onEdit} className="w-28 py-3 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-lg font-semibold transition-colors">
+                    Edit
+                </button>
+            )}
+        </div>
     </div>
 );
 
@@ -170,8 +196,13 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 const App = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [url, setUrl] = useState('');
-  const [pageSpeedApiKey, setPageSpeedApiKey] = useState(() => localStorage.getItem('googlePageSpeedApiKey') || '');
-  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('geminiApiKey') || '');
+  
+  const [pageSpeedApiKey, setPageSpeedApiKey] = useState('');
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  
+  const [isEditingPageSpeedKey, setIsEditingPageSpeedKey] = useState(true);
+  const [isEditingGeminiKey, setIsEditingGeminiKey] = useState(true);
+  const [isSavingKeys, setIsSavingKeys] = useState(false);
   
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [pageSpeedBefore, setPageSpeedBefore] = useState(null);
@@ -201,42 +232,71 @@ const App = () => {
     }
     setUserId(id);
   }, []);
-
+  
   useEffect(() => {
     if (!userId) return;
 
-    // Temporarily disabled session fetching to allow for Vercel deployment.
-    const fetchSessionData = async () => {
+    const fetchUserData = async () => {
         setSessionLoadError('');
         try {
-            // const response = await fetch(`/api/sessions?userId=${userId}`);
-            // if (!response.ok) {
-            //     const errorData = await response.json().catch(() => ({ message: 'Failed to fetch session data.' }));
-            //     throw new Error(errorData.message);
-            // }
-            // const data = await response.json();
-            // setSessionLog(data);
+            // Fetch API Keys
+            const keysResponse = await fetch(`/api/user-data?userId=${userId}`);
+            if (keysResponse.ok) {
+                const keysData = await keysResponse.json();
+                setPageSpeedApiKey(keysData.pageSpeedApiKey || '');
+                setGeminiApiKey(keysData.geminiApiKey || '');
+                setIsEditingPageSpeedKey(!keysData.pageSpeedApiKey);
+                setIsEditingGeminiKey(!keysData.geminiApiKey);
+            } else {
+                 throw new Error('Failed to fetch API keys.');
+            }
+
+            // Fetch Session History
+            const sessionsResponse = await fetch(`/api/sessions?userId=${userId}`);
+            if (!sessionsResponse.ok) {
+                const errorData = await sessionsResponse.json().catch(() => ({ message: 'Failed to fetch session data.' }));
+                throw new Error(errorData.message);
+            }
+            const sessionsData = await sessionsResponse.json();
+            setSessionLog(sessionsData);
         } catch (error: any) {
-            console.error("Failed to load session data:", error);
-            // setSessionLoadError(`Could not load history: ${error.message}`);
+            console.error("Failed to load user data:", error);
+            setSessionLoadError(`Could not load history or keys: ${error.message}`);
         }
     };
 
-    // fetchSessionData();
+    fetchUserData();
   }, [userId]);
-  
-  useEffect(() => {
-    localStorage.setItem('googlePageSpeedApiKey', pageSpeedApiKey);
-  }, [pageSpeedApiKey]);
-  
-  useEffect(() => {
-    localStorage.setItem('geminiApiKey', geminiApiKey);
-  }, [geminiApiKey]);
 
+  const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed' | 'both') => {
+      if (!userId) return;
+      setIsSavingKeys(true);
+      try {
+          const res = await fetch(`/api/user-data?userId=${userId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pageSpeedApiKey, geminiApiKey })
+          });
+
+          if (!res.ok) {
+              const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred while saving.' }));
+              throw new Error(errorData.message);
+          }
+          
+          if ((keyType === 'pagespeed' || keyType === 'both') && pageSpeedApiKey) setIsEditingPageSpeedKey(false);
+          if ((keyType === 'gemini' || keyType === 'both') && geminiApiKey) setIsEditingGeminiKey(false);
+
+      } catch (error: any) {
+          console.error("Failed to save keys:", error);
+          setApiError(`Could not save keys: ${error.message}`);
+      } finally {
+          setIsSavingKeys(false);
+      }
+  };
 
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
-    if (!pageSpeedApiKey) { setApiError('Please enter your PageSpeed API Key to measure speed.'); return; }
+    if (!pageSpeedApiKey) { setApiError('Please provide and save your PageSpeed API Key to measure speed.'); return; }
     
     setIsMeasuring(true);
     setApiError('');
@@ -280,20 +340,19 @@ const App = () => {
                     userId: userId,
                 };
                 
-                // Temporarily disabled session saving to allow for Vercel deployment.
-                // const response = await fetch('/api/sessions', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify(completedSession)
-                // });
+                const response = await fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(completedSession)
+                });
                 
-                // if (!response.ok) {
-                //     const errorData = await response.json().catch(() => ({ message: 'The server returned an unexpected error. Check Vercel function logs for details.' }));
-                //     throw new Error(errorData.message ? `Could not save session: ${errorData.message}` : 'Could not save session due to a server error.');
-                // }
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'The server returned an unexpected error. Check Vercel function logs for details.' }));
+                    throw new Error(errorData.message ? `Could not save session: ${errorData.message}` : 'Could not save session due to a server error.');
+                }
 
-                // const savedSession = await response.json();
-                // setSessionLog(prevLog => [savedSession, ...prevLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()));
+                const savedSession = await response.json();
+                setSessionLog(prevLog => [savedSession, ...prevLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()));
                 
                 setCurrentSession(null);
                 
@@ -402,37 +461,33 @@ const App = () => {
             </div>
             <Step number="1" title="Measure Your Page Speed">
                 {currentSession && <SessionTimer startTime={currentSession.startTime} />}
-                <p className="text-sm text-brand-text-secondary mb-3">Enter the full URL of your blog post to get a baseline performance report.</p>
-                 <div className="space-y-3">
-                    <div>
-                        <label className="text-sm font-medium text-brand-text-secondary mb-1 block">Gemini API Key</label>
-                        <input
-                            type="password"
-                            value={geminiApiKey}
-                            onChange={e => setGeminiApiKey(e.target.value)}
-                            placeholder="Enter your Gemini API Key for AI features"
-                            className="w-full p-3 pl-4 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"
-                            autoComplete="new-password"
-                        />
-                    </div>
-                    <div>
-                       <label className="text-sm font-medium text-brand-text-secondary mb-1 block">PageSpeed API Key</label>
-                        <input
-                            type="password"
-                            value={pageSpeedApiKey}
-                            onChange={e => setPageSpeedApiKey(e.target.value)}
-                            placeholder="Enter your PageSpeed API Key"
-                             className="w-full p-3 pl-4 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"
-                            autoComplete="new-password"
-                        />
-                    </div>
-                    <div className="flex gap-2">
-                        <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
-                        <button onClick={handleMeasure} disabled={isMeasuring || !url || !pageSpeedApiKey} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-brand-background rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
-                          {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
-                          {pageSpeedBefore ? 'Compare Speed' : 'Measure Speed'}
-                        </button>
-                    </div>
+                <p className="text-sm text-brand-text-secondary mb-3">Manage your API keys below, then enter a URL to get a baseline performance report.</p>
+                 <div className="space-y-4 p-4 rounded-lg bg-brand-background border border-brand-border mb-4">
+                     <ApiKeyInput 
+                        label="Gemini API Key"
+                        value={geminiApiKey}
+                        onChange={(e) => setGeminiApiKey(e.target.value)}
+                        isEditing={isEditingGeminiKey}
+                        onEdit={() => setIsEditingGeminiKey(true)}
+                        isSaving={isSavingKeys}
+                        onSave={() => handleSaveKeys('gemini')}
+                     />
+                     <ApiKeyInput 
+                        label="PageSpeed API Key"
+                        value={pageSpeedApiKey}
+                        onChange={(e) => setPageSpeedApiKey(e.target.value)}
+                        isEditing={isEditingPageSpeedKey}
+                        onEdit={() => setIsEditingPageSpeedKey(true)}
+                        isSaving={isSavingKeys}
+                        onSave={() => handleSaveKeys('pagespeed')}
+                     />
+                </div>
+                <div className="flex gap-2">
+                    <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
+                    <button onClick={handleMeasure} disabled={isMeasuring || !url || !pageSpeedApiKey || isEditingPageSpeedKey} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-brand-background rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
+                      {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
+                      {pageSpeedBefore ? 'Compare Speed' : 'Measure Speed'}
+                    </button>
                 </div>
                 {apiError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{apiError}</p>}
                 {isMeasuring && <p className="text-sm text-center text-brand-text-secondary mt-4 animate-subtle-pulse">Measuring page speed... this can take up to a minute.</p>}
