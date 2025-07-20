@@ -1,10 +1,12 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
 import SetupGuide from './components/SetupGuide.tsx';
 import SessionLog from './components/SessionLog.tsx';
 import SessionTimer from './components/SessionTimer.tsx';
+import Login from './components/Login.tsx';
+import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
 import { fetchPageSpeedReport } from './services/pageSpeedService.ts';
@@ -194,7 +196,8 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 
 
 const App = () => {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [url, setUrl] = useState('');
   
   const [pageSpeedApiKey, setPageSpeedApiKey] = useState('');
@@ -225,22 +228,21 @@ const App = () => {
   const [sessionLog, setSessionLog] = useState<Session[]>([]);
 
   useEffect(() => {
-    let id = localStorage.getItem('fastload_user_id');
-    if (!id) {
-      id = uuidv4();
-      localStorage.setItem('fastload_user_id', id);
-    }
-    setUserId(id);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setAuthLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
   
   useEffect(() => {
-    if (!userId) return;
+    if (!user) return;
 
     const fetchUserData = async () => {
         setSessionLoadError('');
         try {
             // Fetch API Keys
-            const keysResponse = await fetch(`/api/user-data?userId=${userId}`);
+            const keysResponse = await fetch(`/api/user-data?userId=${user.uid}`);
             if (!keysResponse.ok) {
                  const errorData = await keysResponse.json().catch(() => ({ message: 'Failed to fetch API keys. The server response was not valid JSON.' }));
                  throw new Error(errorData.message || 'Failed to fetch API keys due to a server error.');
@@ -252,7 +254,7 @@ const App = () => {
             setIsEditingGeminiKey(!keysData.geminiApiKey);
 
             // Fetch Session History
-            const sessionsResponse = await fetch(`/api/sessions?userId=${userId}`);
+            const sessionsResponse = await fetch(`/api/sessions?userId=${user.uid}`);
             if (!sessionsResponse.ok) {
                 const errorData = await sessionsResponse.json().catch(() => ({ message: 'Failed to fetch session data.' }));
                 throw new Error(errorData.message);
@@ -266,13 +268,13 @@ const App = () => {
     };
 
     fetchUserData();
-  }, [userId]);
+  }, [user]);
 
   const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed' | 'both') => {
-      if (!userId) return;
+      if (!user) return;
       setIsSavingKeys(true);
       try {
-          const res = await fetch(`/api/user-data?userId=${userId}`, {
+          const res = await fetch(`/api/user-data?userId=${user.uid}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ pageSpeedApiKey, geminiApiKey })
@@ -318,13 +320,13 @@ const App = () => {
 
         if (pageSpeedBefore) {
             setPageSpeedAfter(newReport);
-            if(currentSession && userId) {
+            if(currentSession && user) {
                 const endTime = new Date();
                 const duration = (endTime.getTime() - new Date(currentSession.startTime).getTime()) / 1000;
                 
                 const getScore = (report, strategy) => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
 
-                const completedSession: Omit<Session, 'id'> = {
+                const completedSession: Omit<Session, 'id' | 'userId'> & { userId: string } = {
                     url: currentSession.url,
                     startTime: currentSession.startTime,
                     endTime: endTime.toISOString(),
@@ -337,10 +339,10 @@ const App = () => {
                         mobile: getScore(newReport, 'mobile'),
                         desktop: getScore(newReport, 'desktop'),
                     },
-                    userId: userId,
+                    userId: user.uid,
                 };
                 
-                const response = await fetch('/api/sessions', {
+                const response = await fetch(`/api/sessions?userId=${user.uid}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(completedSession)
@@ -439,10 +441,25 @@ const App = () => {
 
   const isCleaningLocked = !pageSpeedBefore;
 
+  if (authLoading) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-brand-background">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-accent-start"></div>
+        </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
   return (
     <div className="min-h-screen text-brand-text-primary bg-brand-background p-4 sm:p-6 lg:p-8 flex flex-col">
       <div className="max-w-7xl mx-auto w-full">
         <header className="mb-8 relative">
+          <div className="absolute top-0 right-0 z-10">
+              <UserProfile user={user} />
+          </div>
           <div className="text-center">
              <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-start to-brand-accent-end animate-glow">FastLoad Pro</h1>
             <p className="text-lg text-brand-text-secondary mt-2">Full Performance Analysis & Speed Boost</p>
@@ -456,7 +473,7 @@ const App = () => {
               <SetupGuide />
             </div>
             <div className="mb-2">
-              <SessionLog sessions={sessionLog} setSessions={setSessionLog} userId={userId} />
+              <SessionLog sessions={sessionLog} setSessions={setSessionLog} userId={user.uid} />
               {sessionLoadError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{sessionLoadError}</p>}
             </div>
             <Step number="1" title="Measure Your Page Speed">
