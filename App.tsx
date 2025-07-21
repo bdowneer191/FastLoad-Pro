@@ -5,7 +5,7 @@ import Icon from './components/Icon.tsx';
 import SetupGuide from './components/SetupGuide.tsx';
 import SessionLog from './components/SessionLog.tsx';
 import SessionTimer from './components/SessionTimer.tsx';
-import Login from './components/Login.tsx';
+import Auth from './components/Auth.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
@@ -450,7 +450,7 @@ const App = () => {
   }
 
   if (!user) {
-    return <Login />;
+    return <Auth />;
   }
 
   return (
