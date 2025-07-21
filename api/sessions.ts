@@ -7,8 +7,8 @@ export const config = {
 };
 
 export default async function handler(req: Request) {
-    const { method, url } = req;
-    const { searchParams } = new URL(url);
+    const { method } = req;
+    const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
 
     if (!userId) {
