@@ -13,6 +13,7 @@ export default async function handler(request: Request) {
     }
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        console.error('BLOB_READ_WRITE_TOKEN is not configured.');
         return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -20,16 +21,16 @@ export default async function handler(request: Request) {
 
     try {
         if (request.method === 'GET') {
-            const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
-
-            if (blobs.length === 0) {
-                return new Response(JSON.stringify(emptyUserData), {
-                    status: 200,
-                    headers: { 'Content-Type': 'application/json' },
-                });
-            }
-
             try {
+                const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
+
+                if (blobs.length === 0) {
+                    return new Response(JSON.stringify(emptyUserData), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                }
+
                 const response = await fetch(blobs[0].url);
                 if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
                 if (response.headers.get('content-length') === '0') {
@@ -45,19 +46,24 @@ export default async function handler(request: Request) {
         }
 
         if (request.method === 'POST') {
-            const { geminiApiKey, pageSpeedApiKey } = await request.json();
-            
-            if (typeof geminiApiKey === 'undefined' || typeof pageSpeedApiKey === 'undefined') {
-                 return new Response(JSON.stringify({ message: 'Both geminiApiKey and pageSpeedApiKey must be provided.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            try {
+                const { geminiApiKey, pageSpeedApiKey } = await request.json();
+
+                if (typeof geminiApiKey === 'undefined' || typeof pageSpeedApiKey === 'undefined') {
+                     return new Response(JSON.stringify({ message: 'Both geminiApiKey and pageSpeedApiKey must be provided.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+                }
+
+                await put(blobPath, JSON.stringify({ geminiApiKey, pageSpeedApiKey }), {
+                    access: 'public',
+                    addRandomSuffix: false,
+                    token: process.env.BLOB_READ_WRITE_TOKEN,
+                });
+
+                return new Response(JSON.stringify({ success: true, message: 'API keys saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            } catch (e) {
+                console.error(`Failed to save user-data for user ${userId}:`, e);
+                return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
             }
-
-            await put(blobPath, JSON.stringify({ geminiApiKey, pageSpeedApiKey }), {
-                access: 'public',
-                addRandomSuffix: false,
-                token: process.env.BLOB_READ_WRITE_TOKEN,
-            });
-
-            return new Response(JSON.stringify({ success: true, message: 'API keys saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
 
         return new Response(`Method ${request.method} Not Allowed`, { status: 405 });
