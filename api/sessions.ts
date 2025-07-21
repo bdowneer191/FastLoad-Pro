@@ -2,9 +2,6 @@
 import { put, list, del } from '@vercel/blob';
 import type { Session } from '../types';
 
-export const config = {
-  runtime: 'edge',
-};
 
 export default async function handler(req: Request) {
     const { method } = req;
