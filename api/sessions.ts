@@ -83,6 +83,7 @@ export default async function handler(req: Request) {
         return new Response(`Method ${method} Not Allowed`, { status: 405, headers: { 'Content-Type': 'application/json' }});
 
     } catch (error: any) {
-        return new Response(JSON.stringify({ message: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' }});
+        console.error('Error in /api/sessions:', error);
+        return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' }});
     }
 }

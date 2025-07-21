@@ -6,6 +6,7 @@ import SetupGuide from './components/SetupGuide.tsx';
 import SessionLog from './components/SessionLog.tsx';
 import SessionTimer from './components/SessionTimer.tsx';
 import Auth from './components/Auth.tsx';
+import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
@@ -451,6 +452,10 @@ const App = () => {
 
   if (!user) {
     return <Auth />;
+  }
+
+  if (!user.emailVerified) {
+    return <VerifyEmail />;
   }
 
   return (

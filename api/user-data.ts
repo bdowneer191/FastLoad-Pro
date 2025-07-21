@@ -62,6 +62,7 @@ export default async function handler(request: Request) {
 
         return new Response(`Method ${request.method} Not Allowed`, { status: 405 });
     } catch (error: any) {
-        return new Response(JSON.stringify({ message: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        console.error('Error in /api/user-data:', error);
+        return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 }
