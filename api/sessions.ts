@@ -3,8 +3,8 @@ import type { Session } from '../types';
 
 export default async function handler(req: Request) {
     const { method } = req;
-    const { searchParams } = new URL(req.url, `https://${req.headers.get('host')}`);
-    const userId = searchParams.get('userId');
+    const url = new URL(req.url);
+    const userId = url.searchParams.get('userId');
 
     if (!userId) {
         return new Response(JSON.stringify({ message: 'User ID is required.' }), { 
