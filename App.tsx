@@ -71,8 +71,8 @@ const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSa
                     Edit
                 </button>
             )}
-            <button onClick={onDelete} className="w-28 py-3 px-4 bg-brand-danger text-white rounded-lg font-semibold transition-colors">
-                Delete
+            <button onClick={onDelete} disabled={isSaving} className="w-28 py-3 px-4 bg-brand-danger text-white rounded-lg font-semibold transition-colors">
+                {isSaving ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Delete'}
             </button>
         </div>
     </div>
@@ -209,7 +209,7 @@ const App = () => {
   
   const [isEditingPageSpeedKey, setIsEditingPageSpeedKey] = useState(true);
   const [isEditingGeminiKey, setIsEditingGeminiKey] = useState(true);
-  const [isSavingKeys, setIsSavingKeys] = useState(false);
+  const [isSaving, setIsSaving] = useState<{gemini: boolean, pagespeed: boolean}>({gemini: false, pagespeed: false});
   
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [pageSpeedBefore, setPageSpeedBefore] = useState(null);
@@ -276,6 +276,7 @@ const App = () => {
 
   const handleDeleteKeys = async (keyType: 'gemini' | 'pagespeed') => {
       if (!user) return;
+      setIsSaving(prev => ({...prev, [keyType]: true}));
       try {
           const res = await fetch(`/api/user-data?userId=${user.uid}`, {
               method: 'POST',
@@ -302,12 +303,14 @@ const App = () => {
       } catch (error: any) {
           console.error("Failed to delete keys:", error);
           setApiError(`Could not delete keys: ${error.message}`);
+      } finally {
+          setIsSaving(prev => ({...prev, [keyType]: false}));
       }
   };
 
   const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed') => {
       if (!user) return;
-      setIsSavingKeys(true);
+      setIsSaving(prev => ({...prev, [keyType]: true}));
       try {
           const res = await fetch(`/api/user-data?userId=${user.uid}`, {
               method: 'POST',
@@ -330,7 +333,7 @@ const App = () => {
           console.error("Failed to save keys:", error);
           setApiError(`Could not save keys: ${error.message}`);
       } finally {
-          setIsSavingKeys(false);
+          setIsSaving(prev => ({...prev, [keyType]: false}));
       }
   };
 
@@ -528,7 +531,7 @@ const App = () => {
                         onChange={(e) => setGeminiApiKey(e.target.value)}
                         isEditing={isEditingGeminiKey}
                         onEdit={() => setIsEditingGeminiKey(true)}
-                        isSaving={isSavingKeys}
+                        isSaving={isSaving.gemini}
                         onSave={() => handleSaveKeys('gemini')}
                         onDelete={() => handleDeleteKeys('gemini')}
                      />
@@ -538,7 +541,7 @@ const App = () => {
                         onChange={(e) => setPageSpeedApiKey(e.target.value)}
                         isEditing={isEditingPageSpeedKey}
                         onEdit={() => setIsEditingPageSpeedKey(true)}
-                        isSaving={isSavingKeys}
+                        isSaving={isSaving.pagespeed}
                         onSave={() => handleSaveKeys('pagespeed')}
                         onDelete={() => handleDeleteKeys('pagespeed')}
                      />
