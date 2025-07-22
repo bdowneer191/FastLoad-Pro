@@ -1,4 +1,4 @@
-import { put, list, del } from '@vercel/blob';
+import { createBlobService, list, del } from '@vercel/blob';
 
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
@@ -14,6 +14,10 @@ export default async function handler(request: Request) {
         console.error('BLOB_READ_WRITE_TOKEN is not configured.');
         return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
+
+    const blobService = createBlobService({
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
 
     const blobPath = `user-data/${userId}.json`;
 
@@ -51,10 +55,9 @@ export default async function handler(request: Request) {
                      return new Response(JSON.stringify({ message: 'Both geminiApiKey and pageSpeedApiKey must be provided.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
                 }
 
-                await put(blobPath, JSON.stringify({ geminiApiKey, pageSpeedApiKey }), {
+                await blobService.put(blobPath, JSON.stringify({ geminiApiKey, pageSpeedApiKey }), {
                     access: 'public',
                     addRandomSuffix: false,
-                    token: process.env.BLOB_READ_WRITE_TOKEN,
                 });
 
                 return new Response(JSON.stringify({ success: true, message: 'API keys saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -66,7 +69,7 @@ export default async function handler(request: Request) {
 
         if (request.method === 'DELETE') {
             try {
-                await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN });
+                await blobService.del(blobPath);
                 return new Response(JSON.stringify({ success: true, message: 'API keys deleted.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
             } catch (e: any) {
                 console.error(`Failed to delete user-data for user ${userId}:`, e);
