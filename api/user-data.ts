@@ -3,8 +3,8 @@ import { put, list, del } from '@vercel/blob';
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
 export default async function handler(request: Request) {
-    const { searchParams } = new URL(request.url, `https://${request.headers.get('host')}`);
-    const userId = searchParams.get('userId');
+    const url = new URL(request.url);
+    const userId = url.searchParams.get('userId');
 
     if (!userId) {
         return new Response(JSON.stringify({ message: 'User ID is required.' }), { 
