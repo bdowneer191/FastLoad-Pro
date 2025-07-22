@@ -46,7 +46,8 @@ export default async function handler(request: Request) {
 
         if (request.method === 'POST') {
             try {
-                const { geminiApiKey, pageSpeedApiKey } = await request.json();
+                const body = await request.json();
+                const { geminiApiKey, pageSpeedApiKey } = body;
 
                 if (typeof geminiApiKey === 'undefined' || typeof pageSpeedApiKey === 'undefined') {
                      return new Response(JSON.stringify({ message: 'Both geminiApiKey and pageSpeedApiKey must be provided.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
