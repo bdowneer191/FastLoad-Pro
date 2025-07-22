@@ -3,7 +3,7 @@ import { put, list, del } from '@vercel/blob';
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
 export default async function handler(request: Request) {
-    const { searchParams } = new URL(request.url, `https://${request.headers.get('host')}`);
+    const { searchParams } = new URL(request.url, `https://${request.headers.host}`);
     const userId = searchParams.get('userId');
 
     if (!userId) {

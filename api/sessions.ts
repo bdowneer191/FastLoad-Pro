@@ -5,7 +5,7 @@ import type { Session } from '../types';
 
 export default async function handler(req: Request) {
     const { method } = req;
-    const { searchParams } = new URL(req.url, `https://${req.headers.get('host')}`);
+    const { searchParams } = new URL(req.url, `https://${req.headers.host}`);
     const userId = searchParams.get('userId');
 
     if (!userId) {
