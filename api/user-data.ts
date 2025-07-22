@@ -10,7 +10,6 @@ export default async function handler(request: Request) {
         return new Response(JSON.stringify({ message: 'User ID is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    console.log('BLOB_READ_WRITE_TOKEN:', process.env.BLOB_READ_WRITE_TOKEN);
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
         console.error('BLOB_READ_WRITE_TOKEN is not configured.');
         return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -46,7 +45,11 @@ export default async function handler(request: Request) {
 
         if (request.method === 'POST') {
             try {
-                const body = await request.text();
+                const chunks = [];
+                for await (const chunk of request.body) {
+                    chunks.push(chunk);
+                }
+                const body = Buffer.concat(chunks).toString();
                 const { geminiApiKey, pageSpeedApiKey } = JSON.parse(body);
 
                 if (typeof geminiApiKey === 'undefined' || typeof pageSpeedApiKey === 'undefined') {
