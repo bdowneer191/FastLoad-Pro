@@ -278,7 +278,12 @@ const App = () => {
       if (!user) return;
       try {
           const res = await fetch(`/api/user-data?userId=${user.uid}`, {
-              method: 'DELETE',
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  geminiApiKey: keyType === 'gemini' ? '' : undefined,
+                  pageSpeedApiKey: keyType === 'pagespeed' ? '' : undefined,
+              })
           });
 
           if (!res.ok) {
@@ -300,14 +305,17 @@ const App = () => {
       }
   };
 
-  const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed' | 'both') => {
+  const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed') => {
       if (!user) return;
       setIsSavingKeys(true);
       try {
           const res = await fetch(`/api/user-data?userId=${user.uid}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ pageSpeedApiKey, geminiApiKey })
+              body: JSON.stringify({
+                  geminiApiKey: keyType === 'gemini' ? geminiApiKey : undefined,
+                  pageSpeedApiKey: keyType === 'pagespeed' ? pageSpeedApiKey : undefined,
+              })
           });
 
           if (!res.ok) {
@@ -315,8 +323,8 @@ const App = () => {
               throw new Error(errorData.message);
           }
           
-          if ((keyType === 'pagespeed' || keyType === 'both') && pageSpeedApiKey) setIsEditingPageSpeedKey(false);
-          if ((keyType === 'gemini' || keyType === 'both') && geminiApiKey) setIsEditingGeminiKey(false);
+          if (keyType === 'pagespeed' && pageSpeedApiKey) setIsEditingPageSpeedKey(false);
+          if (keyType === 'gemini' && geminiApiKey) setIsEditingGeminiKey(false);
 
       } catch (error: any) {
           console.error("Failed to save keys:", error);
