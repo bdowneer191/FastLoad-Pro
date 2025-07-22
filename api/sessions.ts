@@ -1,23 +1,19 @@
+
 import { put, list, del } from '@vercel/blob';
 import type { Session } from '../types';
 
+
 export default async function handler(req: Request) {
     const { method } = req;
-    const url = new URL(req.url);
-    const userId = url.searchParams.get('userId');
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
 
     if (!userId) {
-        return new Response(JSON.stringify({ message: 'User ID is required.' }), { 
-            status: 400, 
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ message: 'User ID is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
     }
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { 
-            status: 500, 
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' }});
     }
     
     const blobPath = `sessions/${userId}.json`;
@@ -26,40 +22,26 @@ export default async function handler(req: Request) {
         if (method === 'GET') {
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
             if (blobs.length === 0) {
-                return new Response(JSON.stringify([]), { 
-                    status: 200, 
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
             }
             
             try {
                 const response = await fetch(blobs[0].url);
                 if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
                 if (response.headers.get('content-length') === '0') {
-                     return new Response(JSON.stringify([]), { 
-                         status: 200, 
-                         headers: { 'Content-Type': 'application/json' }
-                     });
+                     return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
                 }
                 const data = await response.json();
-                return new Response(JSON.stringify(data), { 
-                    status: 200, 
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' }});
             } catch (e) {
                 console.error(`Failed to read or parse session data for user ${userId}:`, e);
                 // If the blob is corrupt or unreadable, return an empty array to not break the client.
-                return new Response(JSON.stringify([]), { 
-                    status: 200, 
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
             }
         }
 
         if (method === 'POST') {
-            // Clone the request to read the body
-            const body = await req.text();
-            const newSession: Omit<Session, 'id'> = JSON.parse(body);
+            const newSession: Omit<Session, 'id'> = await req.json();
             
             let sessions: Session[] = [];
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -87,10 +69,7 @@ export default async function handler(req: Request) {
                 token: process.env.BLOB_READ_WRITE_TOKEN,
             });
 
-            return new Response(JSON.stringify(sessionWithId), { 
-                status: 200, 
-                headers: { 'Content-Type': 'application/json' }
-            });
+            return new Response(JSON.stringify(sessionWithId), { status: 200, headers: { 'Content-Type': 'application/json' }});
         }
         
         if (method === 'DELETE') {
@@ -98,25 +77,13 @@ export default async function handler(req: Request) {
             if(blobs.length > 0) {
                await del(blobs[0].url, { token: process.env.BLOB_READ_WRITE_TOKEN });
             }
-            return new Response(JSON.stringify({ success: true, message: 'History cleared.' }), { 
-                status: 200, 
-                headers: { 'Content-Type': 'application/json' }
-            });
+            return new Response(JSON.stringify({ success: true, message: 'History cleared.' }), { status: 200, headers: { 'Content-Type': 'application/json' }});
         }
 
-        return new Response(`Method ${method} Not Allowed`, { 
-            status: 405, 
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(`Method ${method} Not Allowed`, { status: 405, headers: { 'Content-Type': 'application/json' }});
 
     } catch (error: any) {
         console.error('Error in /api/sessions:', error);
-        return new Response(JSON.stringify({ 
-            message: 'An internal server error occurred.', 
-            error: error.message 
-        }), { 
-            status: 500, 
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' }});
     }
 }
