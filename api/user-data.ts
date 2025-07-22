@@ -1,6 +1,4 @@
-
-import { put, list } from '@vercel/blob';
-
+import { put, list, del } from '@vercel/blob';
 
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
@@ -60,8 +58,18 @@ export default async function handler(request: Request) {
                 });
 
                 return new Response(JSON.stringify({ success: true, message: 'API keys saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-            } catch (e) {
+            } catch (e: any) {
                 console.error(`Failed to save user-data for user ${userId}:`, e);
+                return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+            }
+        }
+
+        if (request.method === 'DELETE') {
+            try {
+                await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN });
+                return new Response(JSON.stringify({ success: true, message: 'API keys deleted.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            } catch (e: any) {
+                console.error(`Failed to delete user-data for user ${userId}:`, e);
                 return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
             }
         }
