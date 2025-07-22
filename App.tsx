@@ -48,12 +48,12 @@ const Step = ({ number, title, children }) => (
     </div>
 );
 
-const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSave }) => (
+const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSave, onDelete }) => (
     <div>
         <label className="text-sm font-medium text-brand-text-secondary mb-1 block">{label}</label>
         <div className="flex gap-2">
             <input
-                type="password"
+                type={isEditing ? 'text' : 'password'}
                 value={isEditing ? value : (value ? '••••••••••••••••••••••••••••••••••' : '')}
                 onChange={onChange}
                 readOnly={!isEditing}
@@ -71,6 +71,9 @@ const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSa
                     Edit
                 </button>
             )}
+            <button onClick={onDelete} className="w-28 py-3 px-4 bg-brand-danger text-white rounded-lg font-semibold transition-colors">
+                Delete
+            </button>
         </div>
     </div>
 );
@@ -270,6 +273,32 @@ const App = () => {
 
     fetchUserData();
   }, [user]);
+
+  const handleDeleteKeys = async (keyType: 'gemini' | 'pagespeed') => {
+      if (!user) return;
+      try {
+          const res = await fetch(`/api/user-data?userId=${user.uid}`, {
+              method: 'DELETE',
+          });
+
+          if (!res.ok) {
+              const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred while deleting.' }));
+              throw new Error(errorData.message);
+          }
+
+          if (keyType === 'gemini') {
+              setGeminiApiKey('');
+              setIsEditingGeminiKey(true);
+          } else if (keyType === 'pagespeed') {
+              setPageSpeedApiKey('');
+              setIsEditingPageSpeedKey(true);
+          }
+
+      } catch (error: any) {
+          console.error("Failed to delete keys:", error);
+          setApiError(`Could not delete keys: ${error.message}`);
+      }
+  };
 
   const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed' | 'both') => {
       if (!user) return;
@@ -493,6 +522,7 @@ const App = () => {
                         onEdit={() => setIsEditingGeminiKey(true)}
                         isSaving={isSavingKeys}
                         onSave={() => handleSaveKeys('gemini')}
+                        onDelete={() => handleDeleteKeys('gemini')}
                      />
                      <ApiKeyInput 
                         label="PageSpeed API Key"
@@ -502,6 +532,7 @@ const App = () => {
                         onEdit={() => setIsEditingPageSpeedKey(true)}
                         isSaving={isSavingKeys}
                         onSave={() => handleSaveKeys('pagespeed')}
+                        onDelete={() => handleDeleteKeys('pagespeed')}
                      />
                 </div>
                 <div className="flex gap-2">
