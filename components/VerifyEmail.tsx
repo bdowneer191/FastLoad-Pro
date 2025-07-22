@@ -19,7 +19,7 @@ const VerifyEmail = () => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center bg-brand-background">
-            <div className="max-w-md w-full">
+            <div className="max-w-md w-full p-8 bg-brand-surface rounded-lg shadow-lg">
                 <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-start to-brand-accent-end animate-glow mb-4">
                     Verify Your Email
                 </h1>
@@ -31,7 +31,7 @@ const VerifyEmail = () => {
 
                 <button
                     onClick={handleResendVerification}
-                    className="w-full max-w-xs mx-auto flex items-center justify-center gap-3 py-3 px-6 bg-brand-accent-start text-white rounded-lg font-semibold transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-background focus:ring-brand-accent-start mb-4"
+                    className="w-full max-w-xs mx-auto flex items-center justify-center gap-3 py-3 px-6 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-background focus:ring-brand-accent-start mb-4"
                 >
                     Resend Verification Email
                 </button>

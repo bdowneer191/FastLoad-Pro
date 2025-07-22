@@ -1,1 +1,46 @@
-/* Add your global styles here */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+:root {
+  --brand-background: #0D1117;
+  --brand-surface: #161B22;
+  --brand-border: #30363D;
+  --brand-text-primary: #C9D1D9;
+  --brand-text-secondary: #8B949E;
+  --brand-accent-start: #58A6FF;
+  --brand-accent-end: #3B82F6;
+  --brand-success: #238636;
+  --brand-warning: #D29922;
+  --brand-danger: #DA3633;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--brand-background);
+  color: var(--brand-text-primary);
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 10px var(--brand-accent-start), 0 0 20px var(--brand-accent-start), 0 0 30px var(--brand-accent-start);
+  }
+  to {
+    text-shadow: 0 0 20px var(--brand-accent-end), 0 0 30px var(--brand-accent-end), 0 0 40px var(--brand-accent-end);
+  }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes subtle-pulse {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 1;
+  }
+}
