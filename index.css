@@ -1,20 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap');
 
 :root {
-  --brand-background: #0D1117;
-  --brand-surface: #161B22;
-  --brand-border: #30363D;
-  --brand-text-primary: #C9D1D9;
-  --brand-text-secondary: #8B949E;
-  --brand-accent-start: #58A6FF;
-  --brand-accent-end: #3B82F6;
-  --brand-success: #238636;
-  --brand-warning: #D29922;
-  --brand-danger: #DA3633;
+  --brand-background: #F3F4F6;
+  --brand-surface: #FFFFFF;
+  --brand-border: #E5E7EB;
+  --brand-text-primary: #1F2937;
+  --brand-text-secondary: #6B7280;
+  --brand-accent-start: #F97316;
+  --brand-accent-end: #EA580C;
+  --brand-success: #16A34A;
+  --brand-warning: #F59E0B;
+  --brand-danger: #DC2626;
 }
 
 body {
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Orbitron', sans-serif;
   background-color: var(--brand-background);
   color: var(--brand-text-primary);
 }
@@ -25,10 +25,10 @@ body {
 
 @keyframes glow {
   from {
-    text-shadow: 0 0 10px var(--brand-accent-start), 0 0 20px var(--brand-accent-start), 0 0 30px var(--brand-accent-start);
+    text-shadow: 0 0 5px var(--brand-accent-start), 0 0 10px var(--brand-accent-start), 0 0 15px var(--brand-accent-start);
   }
   to {
-    text-shadow: 0 0 20px var(--brand-accent-end), 0 0 30px var(--brand-accent-end), 0 0 40px var(--brand-accent-end);
+    text-shadow: 0 0 10px var(--brand-accent-end), 0 0 15px var(--brand-accent-end), 0 0 20px var(--brand-accent-end);
   }
 }
 
@@ -38,7 +38,7 @@ body {
 
 @keyframes subtle-pulse {
   from {
-    opacity: 0.8;
+    opacity: 0.9;
   }
   to {
     opacity: 1;

@@ -38,7 +38,7 @@ const initialOptions = {
 };
 
 const Step = ({ number, title, children }) => (
-    <div className="p-6 bg-brand-surface rounded-xl border border-brand-border relative overflow-hidden transition-all duration-300 hover:border-brand-accent-start">
+    <div className="p-6 bg-brand-surface rounded-xl border border-brand-border relative overflow-hidden transition-all duration-300 hover:border-brand-accent-start hover:shadow-lg">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-accent-start/30 to-transparent"></div>
         <h2 className="text-xl font-semibold mb-4 text-brand-accent-start flex items-center">
             <span className="bg-gradient-to-br from-brand-accent-start to-brand-accent-end text-white rounded-full h-8 w-8 inline-flex items-center justify-center font-bold mr-3 flex-shrink-0">{number}</span>
