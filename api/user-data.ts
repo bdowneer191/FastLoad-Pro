@@ -73,9 +73,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ success: true, message: 'API keys saved.' });
         }
 
-        // ... (Your DELETE logic here if needed)
+        if (req.method === 'DELETE') {
+            await del(blobPath, {
+                token: process.env.BLOB_READ_WRITE_TOKEN,
+            });
+            console.log(`Successfully deleted data for user ${userId}.`);
+            return res.status(200).json({ success: true, message: 'User data deleted.' });
+        }
 
-        res.setHeader('Allow', ['GET', 'POST']);
+        res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
 
     } catch (error: any) {
