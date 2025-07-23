@@ -15,12 +15,14 @@ async function streamToString(stream: ReadableStream): Promise<string> {
     return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
-export default async function handler(request: Request) {
-    const host = request.headers.get('host');
-    const proto = request.headers.get('x-forwarded-proto') || 'http';
+export default async function handler(request: any) { // Changed to 'any' for simplicity with Vercel's request object
+    // Correctly access headers using bracket notation
+    const host = request.headers['host'];
+    const proto = request.headers['x-forwarded-proto'] || 'http';
+
+    // The rest of your logic remains the same
     const { searchParams } = new URL(request.url, `${proto}://${host}`);
     const userId = searchParams.get('userId');
-
 
     if (!userId) {
         return new Response(JSON.stringify({ message: 'User ID is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });

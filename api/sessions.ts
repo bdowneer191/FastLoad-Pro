@@ -2,10 +2,10 @@ import { put, list, del } from '@vercel/blob';
 import type { Session } from '../types';
 
 
-export default async function handler(req: Request) {
+export default async function handler(req: any) {
     const { method } = req;
-    const host = req.headers.get('host');
-    const proto = req.headers.get('x-forwarded-proto') || 'http';
+    const host = req.headers['host'];
+    const proto = req.headers['x-forwarded-proto'] || 'http';
     const { searchParams } = new URL(req.url, `${proto}://${host}`);
     const userId = searchParams.get('userId');
 
