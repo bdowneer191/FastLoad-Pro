@@ -1,6 +1,20 @@
 import { put, list, del } from '@vercel/blob';
 import type { Session } from '../types';
 
+async function streamToString(stream: ReadableStream): Promise<string> {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let result = '';
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+        result += decoder.decode(value, { stream: true });
+    }
+    result += decoder.decode(); // Flush the decoder
+    return result;
+}
 
 export default async function handler(req: any) {
     const { method } = req;
@@ -42,7 +56,11 @@ export default async function handler(req: any) {
         }
 
         if (method === 'POST') {
-            const newSession: Omit<Session, 'id'> = await req.json();
+            if (!req.body) {
+                return new Response(JSON.stringify({ message: 'Request body is empty.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            }
+            const body = await streamToString(req.body);
+            const newSession: Omit<Session, 'id'> = JSON.parse(body);
             
             let sessions: Session[] = [];
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
