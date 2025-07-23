@@ -58,6 +58,9 @@ export default async function handler(request: Request) {
 
         if (request.method === 'POST') {
             try {
+                if (!request.body) {
+                    return new Response(JSON.stringify({ message: 'Request body is empty.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+                }
                 const body = await streamToString(request.body);
                 const { geminiApiKey, pageSpeedApiKey } = JSON.parse(body);
 
