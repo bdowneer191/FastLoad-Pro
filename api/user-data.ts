@@ -2,6 +2,14 @@ import { put, list, del } from '@vercel/blob';
 
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
+async function streamToString(stream) {
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk);
+    }
+    return Buffer.concat(chunks).toString('utf8');
+}
+
 export default async function handler(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -45,7 +53,8 @@ export default async function handler(request: Request) {
 
         if (request.method === 'POST') {
             try {
-                const { geminiApiKey, pageSpeedApiKey } = await request.json();
+                const body = await streamToString(request.body);
+                const { geminiApiKey, pageSpeedApiKey } = JSON.parse(body);
 
                 if (typeof geminiApiKey === 'undefined' || typeof pageSpeedApiKey === 'undefined') {
                      return new Response(JSON.stringify({ message: 'Both geminiApiKey and pageSpeedApiKey must be provided.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
