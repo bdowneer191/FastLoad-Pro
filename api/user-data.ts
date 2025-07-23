@@ -10,14 +10,17 @@ async function streamToString(stream: ReadableStream): Promise<string> {
         if (done) {
             break;
         }
-        chunks.push(value);
+        chunks.push(new Uint8Array(value));
     }
-    return Buffer.concat(chunks).toString('utf8');
+    return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
 export default async function handler(request: Request) {
-    const { searchParams } = new URL(request.url);
+    const host = request.headers.get('host');
+    const proto = request.headers.get('x-forwarded-proto') || 'http';
+    const { searchParams } = new URL(request.url, `${proto}://${host}`);
     const userId = searchParams.get('userId');
+
 
     if (!userId) {
         return new Response(JSON.stringify({ message: 'User ID is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -64,11 +67,29 @@ export default async function handler(request: Request) {
                 const body = await streamToString(request.body);
                 const { geminiApiKey, pageSpeedApiKey } = JSON.parse(body);
 
-                if (typeof geminiApiKey === 'undefined' || typeof pageSpeedApiKey === 'undefined') {
-                     return new Response(JSON.stringify({ message: 'Both geminiApiKey and pageSpeedApiKey must be provided.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+                // Fetch existing data to perform a partial update
+                let existingData = { ...emptyUserData };
+                const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
+                if (blobs.length > 0) {
+                    const response = await fetch(blobs[0].url);
+                    if (response.ok && response.headers.get('content-length') !== '0') {
+                        try {
+                            const blobContent = await response.json();
+                            if (blobContent) {
+                                existingData = blobContent;
+                            }
+                        } catch (e) {
+                            console.error(`Could not parse existing user-data for user ${userId}, starting new data.`, e);
+                        }
+                    }
                 }
 
-                await put(blobPath, JSON.stringify({ geminiApiKey, pageSpeedApiKey }), {
+                const updatedData = {
+                    geminiApiKey: geminiApiKey !== undefined ? geminiApiKey : existingData.geminiApiKey,
+                    pageSpeedApiKey: pageSpeedApiKey !== undefined ? pageSpeedApiKey : existingData.pageSpeedApiKey,
+                };
+
+                await put(blobPath, JSON.stringify(updatedData), {
                     access: 'public',
                     addRandomSuffix: false,
                     token: process.env.BLOB_READ_WRITE_TOKEN,
