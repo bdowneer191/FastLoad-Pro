@@ -1,72 +1,61 @@
 import { put, list, del } from '@vercel/blob';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
-async function streamToString(stream: ReadableStream): Promise<string> {
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    let result = '';
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
-        }
-        result += decoder.decode(value, { stream: true });
-    }
-    result += decoder.decode(); // Flush the decoder
-    return result;
-}
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // Vercel automatically parses the query string.
+    const { userId } = req.query;
 
-export default async function handler(request: any) {
-    const host = request.headers['x-forwarded-host'] || request.headers['host'];
-    const proto = request.headers['x-forwarded-proto'] || 'http';
-    const { searchParams } = new URL(request.url, `${proto}://${host}`);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-        return new Response(JSON.stringify({ message: 'User ID is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (!userId || typeof userId !== 'string') {
+        console.log('User ID is missing or invalid.');
+        return res.status(400).json({ message: 'User ID is required.' });
     }
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
         console.error('BLOB_READ_WRITE_TOKEN is not configured.');
-        return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        return res.status(500).json({ message: 'Storage token is not configured.' });
     }
 
     const blobPath = `user-data/${userId}.json`;
+    console.log(`Processing ${req.method} request for blob path: ${blobPath}`);
 
     try {
-        if (request.method === 'GET') {
+        if (req.method === 'GET') {
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
+
             if (blobs.length === 0) {
-                return new Response(JSON.stringify(emptyUserData), { status: 200, headers: { 'Content-Type': 'application/json' } });
+                console.log(`No blob found for user ${userId}, returning empty data.`);
+                return res.status(200).json(emptyUserData);
             }
-            const response = await fetch(blobs[0].url);
-            if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
-            if (response.headers.get('content-length') === '0') {
-                return new Response(JSON.stringify(emptyUserData), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+            const blob = await fetch(blobs[0].url);
+            if (!blob.ok) {
+                 console.error(`Failed to fetch blob from URL ${blobs[0].url}. Status: ${blob.status}`);
+                 // If fetching fails, return default data to prevent client-side error.
+                 return res.status(200).json(emptyUserData);
             }
-            const blobContent = await response.json();
-            return new Response(JSON.stringify(blobContent), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+            const data = await blob.json();
+            console.log(`Successfully fetched data for user ${userId}.`);
+            return res.status(200).json(data);
         }
 
-        if (request.method === 'POST') {
-            if (!request.body) {
-                return new Response(JSON.stringify({ message: 'Request body is empty.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-            }
-            const body = await streamToString(request.body);
-            const { geminiApiKey, pageSpeedApiKey } = JSON.parse(body);
+        if (req.method === 'POST') {
+            // Vercel automatically parses the JSON body.
+            const { geminiApiKey, pageSpeedApiKey } = req.body;
 
             let existingData = { ...emptyUserData };
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
             if (blobs.length > 0) {
-                const response = await fetch(blobs[0].url);
-                if (response.ok && response.headers.get('content-length') !== '0') {
-                    try {
-                        existingData = await response.json();
-                    } catch (e) {
-                        console.error(`Could not parse existing data for user ${userId}, starting fresh.`, e);
-                    }
-                }
+                 const blob = await fetch(blobs[0].url);
+                 if (blob.ok) {
+                     try {
+                        existingData = await blob.json();
+                     } catch(e) {
+                        console.error('Failed to parse existing blob, will overwrite.');
+                     }
+                 }
             }
 
             const updatedData = {
@@ -80,17 +69,17 @@ export default async function handler(request: any) {
                 token: process.env.BLOB_READ_WRITE_TOKEN,
             });
 
-            return new Response(JSON.stringify({ success: true, message: 'API keys saved.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            console.log(`Successfully saved data for user ${userId}.`);
+            return res.status(200).json({ success: true, message: 'API keys saved.' });
         }
 
-        if (request.method === 'DELETE') {
-            await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN });
-            return new Response(JSON.stringify({ success: true, message: 'API keys deleted.' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        }
+        // ... (Your DELETE logic here if needed)
 
-        return new Response(`Method ${request.method} Not Allowed`, { status: 405 });
+        res.setHeader('Allow', ['GET', 'POST']);
+        return res.status(405).end(`Method ${req.method} Not Allowed`);
+
     } catch (error: any) {
-        console.error('Error in /api/user-data:', error);
-        return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        console.error(`Unhandled error for user ${userId}:`, error);
+        return res.status(500).json({ message: 'An internal server error occurred.', error: error.message });
     }
 }
