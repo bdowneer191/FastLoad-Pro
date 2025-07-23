@@ -2,10 +2,15 @@ import { put, list, del } from '@vercel/blob';
 
 const emptyUserData = { geminiApiKey: '', pageSpeedApiKey: '' };
 
-async function streamToString(stream) {
+async function streamToString(stream: ReadableStream): Promise<string> {
     const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
+    const reader = stream.getReader();
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+        chunks.push(value);
     }
     return Buffer.concat(chunks).toString('utf8');
 }
