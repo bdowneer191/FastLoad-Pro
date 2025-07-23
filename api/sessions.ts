@@ -1,34 +1,18 @@
 import { put, list, del } from '@vercel/blob';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { Session } from '../types';
 
-async function streamToString(stream: ReadableStream): Promise<string> {
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    let result = '';
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
-        }
-        result += decoder.decode(value, { stream: true });
-    }
-    result += decoder.decode(); // Flush the decoder
-    return result;
-}
 
-export default async function handler(req: any) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { method } = req;
-    const host = req.headers['host'];
-    const proto = req.headers['x-forwarded-proto'] || 'http';
-    const { searchParams } = new URL(req.url, `${proto}://${host}`);
-    const userId = searchParams.get('userId');
+    const { userId } = req.query;
 
-    if (!userId) {
-        return new Response(JSON.stringify({ message: 'User ID is required.' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
+    if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: 'User ID is required.' });
     }
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        return new Response(JSON.stringify({ message: 'Storage token is not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' }});
+        return res.status(500).json({ message: 'Storage token is not configured.' });
     }
     
     const blobPath = `sessions/${userId}.json`;
@@ -37,30 +21,25 @@ export default async function handler(req: any) {
         if (method === 'GET') {
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
             if (blobs.length === 0) {
-                return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
+                return res.status(200).json([]);
             }
             
             try {
                 const response = await fetch(blobs[0].url);
                 if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
                 if (response.headers.get('content-length') === '0') {
-                     return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
+                     return res.status(200).json([]);
                 }
                 const data = await response.json();
-                return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' }});
+                return res.status(200).json(data);
             } catch (e) {
                 console.error(`Failed to read or parse session data for user ${userId}:`, e);
-                // If the blob is corrupt or unreadable, return an empty array to not break the client.
-                return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' }});
+                return res.status(200).json([]);
             }
         }
 
         if (method === 'POST') {
-            if (!req.body) {
-                return new Response(JSON.stringify({ message: 'Request body is empty.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-            }
-            const body = await streamToString(req.body);
-            const newSession: Omit<Session, 'id'> = JSON.parse(body);
+            const newSession: Omit<Session, 'id'> = req.body;
             
             let sessions: Session[] = [];
             const { blobs } = await list({ prefix: blobPath, limit: 1, token: process.env.BLOB_READ_WRITE_TOKEN });
@@ -88,7 +67,7 @@ export default async function handler(req: any) {
                 token: process.env.BLOB_READ_WRITE_TOKEN,
             });
 
-            return new Response(JSON.stringify(sessionWithId), { status: 200, headers: { 'Content-Type': 'application/json' }});
+            return res.status(200).json(sessionWithId);
         }
         
         if (method === 'DELETE') {
@@ -96,13 +75,14 @@ export default async function handler(req: any) {
             if(blobs.length > 0) {
                await del(blobs[0].url, { token: process.env.BLOB_READ_WRITE_TOKEN });
             }
-            return new Response(JSON.stringify({ success: true, message: 'History cleared.' }), { status: 200, headers: { 'Content-Type': 'application/json' }});
+            return res.status(200).json({ success: true, message: 'History cleared.' });
         }
 
-        return new Response(`Method ${method} Not Allowed`, { status: 405, headers: { 'Content-Type': 'application/json' }});
+        res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+        return res.status(405).end(`Method ${method} Not Allowed`);
 
     } catch (error: any) {
-        console.error('Error in /api/sessions:', error);
-        return new Response(JSON.stringify({ message: 'An internal server error occurred.', error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' }});
+        console.error(`Error in /api/sessions for user ${userId}:`, error);
+        return res.status(500).json({ message: 'An internal server error occurred.', error: error.message });
     }
 }
