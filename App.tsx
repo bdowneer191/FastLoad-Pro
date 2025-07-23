@@ -278,12 +278,8 @@ const App = () => {
       if (!user) return;
       setIsSaving(prev => ({...prev, [keyType]: true}));
       try {
-          const res = await fetch(`/api/user-data`, {
+          const res = await fetch(`/api/user-data?userId=${user.uid}`, {
               method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  userId: user.uid,
-              })
           });
 
           if (!res.ok) {
@@ -311,11 +307,10 @@ const App = () => {
       if (!user) return;
       setIsSaving(prev => ({...prev, [keyType]: true}));
       try {
-          const res = await fetch(`/api/user-data`, {
+          const res = await fetch(`/api/user-data?userId=${user.uid}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                  userId: user.uid,
                   geminiApiKey: keyType === 'gemini' ? geminiApiKey : undefined,
                   pageSpeedApiKey: keyType === 'pagespeed' ? pageSpeedApiKey : undefined,
               })
