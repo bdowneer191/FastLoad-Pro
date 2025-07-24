@@ -9,6 +9,7 @@ import Auth from './components/Auth.tsx';
 import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
+import { useUserData } from './hooks/useUserData.ts';
 import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
 import { fetchPageSpeedReport } from './services/pageSpeedService.ts';
 import { Recommendation, Session, ImpactSummary } from './types.ts';
@@ -48,35 +49,6 @@ const Step = ({ number, title, children }) => (
     </div>
 );
 
-const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSave, onDelete }) => (
-    <div>
-        <label className="text-sm font-medium text-brand-text-secondary mb-1 block">{label}</label>
-        <div className="flex gap-2">
-            <input
-                type={isEditing ? 'text' : 'password'}
-                value={isEditing ? value : (value ? '••••••••••••••••••••••••••••••••••' : '')}
-                onChange={onChange}
-                readOnly={!isEditing}
-                placeholder={`Enter your ${label}`}
-                className="w-full p-3 pl-4 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors disabled:opacity-70"
-                autoComplete="new-password"
-                disabled={!isEditing || isSaving}
-            />
-             {isEditing ? (
-                <button onClick={onSave} disabled={isSaving || !value} className="flex items-center justify-center gap-2 w-28 py-3 px-4 bg-brand-success text-white rounded-lg font-semibold transition-all duration-300 disabled:bg-brand-surface disabled:text-brand-text-secondary">
-                    {isSaving ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Save'}
-                </button>
-            ) : (
-                <button onClick={onEdit} className="w-28 py-3 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-lg font-semibold transition-colors">
-                    Edit
-                </button>
-            )}
-            <button onClick={onDelete} disabled={isSaving} className="w-28 py-3 px-4 bg-brand-danger text-white rounded-lg font-semibold transition-colors">
-                {isSaving ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Delete'}
-            </button>
-        </div>
-    </div>
-);
 
 const ScoreCircle = ({ score, size = 60 }) => {
     const scoreValue = score ? Math.round(score * 100) : 0;
@@ -204,12 +176,6 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [url, setUrl] = useState('');
   
-  const [pageSpeedApiKey, setPageSpeedApiKey] = useState('');
-  const [geminiApiKey, setGeminiApiKey] = useState('');
-  
-  const [isEditingPageSpeedKey, setIsEditingPageSpeedKey] = useState(true);
-  const [isEditingGeminiKey, setIsEditingGeminiKey] = useState(true);
-  const [isSaving, setIsSaving] = useState<{gemini: boolean, pagespeed: boolean}>({gemini: false, pagespeed: false});
   
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [pageSpeedBefore, setPageSpeedBefore] = useState(null);
@@ -245,18 +211,6 @@ const App = () => {
     const fetchUserData = async () => {
         setSessionLoadError('');
         try {
-            // Fetch API Keys
-            const keysResponse = await fetch(`/api/user-data?userId=${user.uid}`);
-            if (!keysResponse.ok) {
-                 const errorData = await keysResponse.json().catch(() => ({ message: 'Failed to fetch API keys. The server response was not valid JSON.' }));
-                 throw new Error(errorData.message || 'Failed to fetch API keys due to a server error.');
-            }
-            const keysData = await keysResponse.json();
-            setPageSpeedApiKey(keysData.pageSpeedApiKey || '');
-            setGeminiApiKey(keysData.geminiApiKey || '');
-            setIsEditingPageSpeedKey(!keysData.pageSpeedApiKey);
-            setIsEditingGeminiKey(!keysData.geminiApiKey);
-
             // Fetch Session History
             const sessionsResponse = await fetch(`/api/sessions?userId=${user.uid}`);
             if (!sessionsResponse.ok) {
@@ -274,67 +228,12 @@ const App = () => {
     fetchUserData();
   }, [user]);
 
-  const handleDeleteKeys = async (keyType: 'gemini' | 'pagespeed') => {
-      if (!user) return;
-      setIsSaving(prev => ({...prev, [keyType]: true}));
-      try {
-          const res = await fetch(`/api/user-data?userId=${user.uid}`, {
-              method: 'DELETE',
-          });
 
-          if (!res.ok) {
-              const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred while deleting.' }));
-              throw new Error(errorData.message);
-          }
-
-          if (keyType === 'gemini') {
-              setGeminiApiKey('');
-              setIsEditingGeminiKey(true);
-          } else if (keyType === 'pagespeed') {
-              setPageSpeedApiKey('');
-              setIsEditingPageSpeedKey(true);
-          }
-
-      } catch (error: any) {
-          console.error("Failed to delete keys:", error);
-          setApiError(`Could not delete keys: ${error.message}`);
-      } finally {
-          setIsSaving(prev => ({...prev, [keyType]: false}));
-      }
-  };
-
-  const handleSaveKeys = async (keyType: 'gemini' | 'pagespeed') => {
-      if (!user) return;
-      setIsSaving(prev => ({...prev, [keyType]: true}));
-      try {
-          const res = await fetch(`/api/user-data?userId=${user.uid}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  geminiApiKey: keyType === 'gemini' ? geminiApiKey : undefined,
-                  pageSpeedApiKey: keyType === 'pagespeed' ? pageSpeedApiKey : undefined,
-              })
-          });
-
-          if (!res.ok) {
-              const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred while saving.' }));
-              throw new Error(errorData.message);
-          }
-          
-          if (keyType === 'pagespeed' && pageSpeedApiKey) setIsEditingPageSpeedKey(false);
-          if (keyType === 'gemini' && geminiApiKey) setIsEditingGeminiKey(false);
-
-      } catch (error: any) {
-          console.error("Failed to save keys:", error);
-          setApiError(`Could not save keys: ${error.message}`);
-      } finally {
-          setIsSaving(prev => ({...prev, [keyType]: false}));
-      }
-  };
+  const { userData } = useUserData(user);
 
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
-    if (!pageSpeedApiKey) { setApiError('Please provide and save your PageSpeed API Key to measure speed.'); return; }
+    if (!userData.pageSpeedApiKey) { setApiError('Please provide and save your PageSpeed API Key to measure speed.'); return; }
     
     setIsMeasuring(true);
     setApiError('');
@@ -352,7 +251,7 @@ const App = () => {
     }
     
     try {
-        const newReport = await fetchPageSpeedReport(pageSpeedApiKey, url);
+        const newReport = await fetchPageSpeedReport(userData.pageSpeedApiKey, url);
 
         if (pageSpeedBefore) {
             setPageSpeedAfter(newReport);
@@ -395,14 +294,14 @@ const App = () => {
                 setCurrentSession(null);
                 
                 setIsGeneratingPlan(true);
-                const analysis = await generateComparisonAnalysis(geminiApiKey, pageSpeedBefore, newReport);
+                const analysis = await generateComparisonAnalysis(userData.geminiApiKey, pageSpeedBefore, newReport);
                 setComparisonAnalysis(analysis);
             }
 
         } else {
             setPageSpeedBefore(newReport);
             setIsGeneratingPlan(true);
-            const plan = await generateOptimizationPlan(geminiApiKey, newReport);
+            const plan = await generateOptimizationPlan(userData.geminiApiKey, newReport);
             setOptimizationPlan(plan);
         }
     } catch (error: any) {
@@ -518,32 +417,10 @@ const App = () => {
             </div>
             <Step number="1" title="Measure Your Page Speed">
                 {currentSession && <SessionTimer startTime={currentSession.startTime} />}
-                <p className="text-sm text-brand-text-secondary mb-3">Manage your API keys below, then enter a URL to get a baseline performance report.</p>
-                 <div className="space-y-4 p-4 rounded-lg bg-brand-surface border border-brand-border mb-4">
-                     <ApiKeyInput 
-                        label="Gemini API Key"
-                        value={geminiApiKey}
-                        onChange={(e) => setGeminiApiKey(e.target.value)}
-                        isEditing={isEditingGeminiKey}
-                        onEdit={() => setIsEditingGeminiKey(true)}
-                        isSaving={isSaving.gemini}
-                        onSave={() => handleSaveKeys('gemini')}
-                        onDelete={() => handleDeleteKeys('gemini')}
-                     />
-                     <ApiKeyInput 
-                        label="PageSpeed API Key"
-                        value={pageSpeedApiKey}
-                        onChange={(e) => setPageSpeedApiKey(e.target.value)}
-                        isEditing={isEditingPageSpeedKey}
-                        onEdit={() => setIsEditingPageSpeedKey(true)}
-                        isSaving={isSaving.pagespeed}
-                        onSave={() => handleSaveKeys('pagespeed')}
-                        onDelete={() => handleDeleteKeys('pagespeed')}
-                     />
-                </div>
+                <p className="text-sm text-brand-text-secondary mb-3">Enter a URL to get a baseline performance report.</p>
                 <div className="flex gap-2">
                     <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
-                    <button onClick={handleMeasure} disabled={isMeasuring || !url || !pageSpeedApiKey || isEditingPageSpeedKey} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
+                    <button onClick={handleMeasure} disabled={isMeasuring || !url || !userData.pageSpeedApiKey} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
                       {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
                       {pageSpeedBefore ? 'Compare Speed' : 'Measure Speed'}
                     </button>
