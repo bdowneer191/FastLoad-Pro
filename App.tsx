@@ -9,7 +9,6 @@ import Auth from './components/Auth.tsx';
 import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
-import { useUserData } from './hooks/useUserData.ts';
 import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
 import { fetchPageSpeedReport } from './services/pageSpeedService.ts';
 import { Recommendation, Session, ImpactSummary } from './types.ts';
@@ -339,7 +338,7 @@ const App = () => {
 
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
-    if (!userData.pageSpeedApiKey) { setApiError('Please provide and save your PageSpeed API Key to measure speed.'); return; }
+    if (!pageSpeedApiKey) { setApiError('Please provide and save your PageSpeed API Key to measure speed.'); return; }
     
     setIsMeasuring(true);
     setApiError('');
