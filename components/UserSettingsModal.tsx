@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { User, updateProfile, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useUserData } from '../hooks/useUserData';
 
@@ -10,16 +10,6 @@ interface UserSettingsModalProps {
 }
 
 const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ user, isOpen, onClose }) => {
-    const { userData, updateUserData } = useUserData(user);
-    const [geminiApiKey, setGeminiApiKey] = useState('');
-    const [pageSpeedApiKey, setPageSpeedApiKey] = useState('');
-
-    useEffect(() => {
-        if (userData) {
-            setGeminiApiKey(userData.geminiApiKey || '');
-            setPageSpeedApiKey(userData.pageSpeedApiKey || '');
-        }
-    }, [userData]);
     if (!isOpen) return null;
 
     return (
@@ -60,10 +50,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ user, isOpen, onC
 
                                     const newBlob = (await response.json());
 
-                                    // Now, you can update the user's profile with the new blob URL
-                                    // This will require a call to a function that updates the user's data
-                                    // For now, we'll just log the blob URL
-                                    console.log(newBlob.url);
+                                    await updateProfile(user, { photoURL: newBlob.url });
                                 }}
                             />
                             <label
@@ -143,44 +130,6 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ user, isOpen, onC
                     </div>
                 </div>
 
-                {/* API Key Configuration Section */}
-                <div>
-                    <h3 className="text-lg font-semibold text-brand-text-primary mb-4">API Key Configuration</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label htmlFor="gemini-api-key" className="block text-sm font-medium text-brand-text-secondary mb-1">
-                                Gemini API Key
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="password"
-                                    id="gemini-api-key"
-                                    value={geminiApiKey}
-                                    onChange={(e) => setGeminiApiKey(e.target.value)}
-                                    className="w-full p-2 bg-brand-background border border-brand-border rounded-lg"
-                                />
-                                <button onClick={() => updateUserData({ geminiApiKey })} className="px-4 py-2 bg-brand-accent-start text-white rounded-lg hover:bg-brand-accent-end">Save</button>
-                                <button onClick={() => { setGeminiApiKey(''); updateUserData({ geminiApiKey: '' })}} className="px-4 py-2 bg-brand-danger text-white rounded-lg hover:bg-red-700">Delete</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label htmlFor="pagespeed-api-key" className="block text-sm font-medium text-brand-text-secondary mb-1">
-                                PageSpeed API Key
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="password"
-                                    id="pagespeed-api-key"
-                                    value={pageSpeedApiKey}
-                                    onChange={(e) => setPageSpeedApiKey(e.target.value)}
-                                    className="w-full p-2 bg-brand-background border border-brand-border rounded-lg"
-                                />
-                                <button onClick={() => updateUserData({ pageSpeedApiKey })} className="px-4 py-2 bg-brand-accent-start text-white rounded-lg hover:bg-brand-accent-end">Save</button>
-                                <button onClick={() => { setPageSpeedApiKey(''); updateUserData({ pageSpeedApiKey: '' })}} className="px-4 py-2 bg-brand-danger text-white rounded-lg hover:bg-red-700">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div className="mt-6">
                     <button
                         onClick={() => signOut(auth)}
