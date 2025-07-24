@@ -360,7 +360,7 @@ const App = () => {
     }
     
     try {
-        const newReport = await fetchPageSpeedReport(userData.pageSpeedApiKey, url);
+        const newReport = await fetchPageSpeedReport(pageSpeedApiKey, url);
 
         if (pageSpeedBefore) {
             setPageSpeedAfter(newReport);
