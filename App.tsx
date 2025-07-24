@@ -396,15 +396,15 @@ const App = () => {
     <div className="min-h-screen text-brand-text-primary bg-brand-background p-4 sm:p-6 lg:p-8 flex flex-col">
       <div className="max-w-7xl mx-auto w-full">
         <header className="mb-8 relative">
-          <div className="absolute top-0 right-0 z-10">
-              <UserProfile user={user} />
-          </div>
           <div className="text-center">
              <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-accent-start to-brand-accent-end animate-glow">FastLoad Pro</h1>
             <p className="text-lg text-brand-text-secondary mt-2">Full Performance Analysis & Speed Boost</p>
             <p className="text-brand-text-secondary mt-1">Prod by <span className="font-semibold text-brand-accent-start">Nion</span></p>
           </div>
         </header>
+        <div className="absolute top-6 right-6 z-50">
+            <UserProfile user={user} />
+        </div>
         
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="flex flex-col gap-6">
