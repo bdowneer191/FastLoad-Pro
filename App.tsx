@@ -276,8 +276,6 @@ const App = () => {
   }, [user]);
 
 
-  const { userData } = useUserData(user);
-
   const handleDeleteKeys = async (keyType: 'gemini' | 'pagespeed') => {
       if (!user) return;
       setIsSaving(prev => ({...prev, [keyType]: true}));
@@ -325,8 +323,14 @@ const App = () => {
               throw new Error(errorData.message);
           }
 
-          if (keyType === 'pagespeed' && pageSpeedApiKey) setIsEditingPageSpeedKey(false);
-          if (keyType === 'gemini' && geminiApiKey) setIsEditingGeminiKey(false);
+          if (keyType === 'pagespeed' && pageSpeedApiKey) {
+              setIsEditingPageSpeedKey(false);
+              setPageSpeedApiKey('');
+          }
+          if (keyType === 'gemini' && geminiApiKey) {
+              setIsEditingGeminiKey(false);
+              setGeminiApiKey('');
+          }
 
       } catch (error: any) {
           console.error("Failed to save keys:", error);
