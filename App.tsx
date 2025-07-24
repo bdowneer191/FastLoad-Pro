@@ -403,14 +403,14 @@ const App = () => {
                 setCurrentSession(null);
                 
                 setIsGeneratingPlan(true);
-                const analysis = await generateComparisonAnalysis(userData.geminiApiKey, pageSpeedBefore, newReport);
+                const analysis = await generateComparisonAnalysis(geminiApiKey, pageSpeedBefore, newReport);
                 setComparisonAnalysis(analysis);
             }
 
         } else {
             setPageSpeedBefore(newReport);
             setIsGeneratingPlan(true);
-            const plan = await generateOptimizationPlan(userData.geminiApiKey, newReport);
+            const plan = await generateOptimizationPlan(geminiApiKey, newReport);
             setOptimizationPlan(plan);
         }
     } catch (error: any) {
