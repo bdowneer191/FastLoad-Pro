@@ -1,6 +1,6 @@
-import { fetchPageSpeedReport } from '../services/pageSpeedService';
-import { generateOptimizationPlan } from '../services/geminiService';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { fetchPageSpeedReport } from '../services/pageSpeedService.js';
+import { generateOptimizationPlan } from '../services/geminiService.js';
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { auth } from '../services/firebase';
 
 export async function POST(request: Request): Promise<Response> {
@@ -32,6 +32,27 @@ export async function POST(request: Request): Promise<Response> {
 
     const pageSpeedReport = await fetchPageSpeedReport(pageSpeedApiKey, urlToScan);
     const optimizationPlan = await generateOptimizationPlan(geminiApiKey, pageSpeedReport);
+
+    const getScore = (report, strategy) => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
+
+    const session = {
+      url: urlToScan,
+      startTime: new Date().toISOString(),
+      endTime: new Date().toISOString(),
+      duration: 0,
+      beforeScores: {
+        mobile: getScore(pageSpeedReport, 'mobile'),
+        desktop: getScore(pageSpeedReport, 'desktop'),
+      },
+      afterScores: {
+        mobile: 0,
+        desktop: 0,
+      },
+      userId: userId,
+    };
+
+    const sessionsCollectionRef = collection(db, 'sessions');
+    await addDoc(sessionsCollectionRef, session);
 
     await setDoc(userDocRef, { freeTrialUsage: freeTrialUsage + 1 }, { merge: true });
 
