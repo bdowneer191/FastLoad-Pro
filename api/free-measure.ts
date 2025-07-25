@@ -1,7 +1,7 @@
-import { fetchPageSpeedReport } from '../services/pageSpeedService.js';
-import { generateOptimizationPlan } from '../services/geminiService.js';
+import { fetchPageSpeedReport } from '/services/pageSpeedService.js';
+import { generateOptimizationPlan } from '/services/geminiService.js';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
-import { auth } from '../services/firebase.js';
+import { auth } from '/services/firebase.js';
 
 export async function POST(request: Request): Promise<Response> {
   try {
