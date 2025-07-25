@@ -250,10 +250,6 @@ const App = () => {
                  throw new Error(errorData.message || 'Failed to fetch API keys due to a server error.');
             }
             const keysData = await keysResponse.json();
-            setPageSpeedApiKey(keysData.pageSpeedApiKey || '');
-            setGeminiApiKey(keysData.geminiApiKey || '');
-            setIsEditingPageSpeedKey(!keysData.pageSpeedApiKey);
-            setIsEditingGeminiKey(!keysData.geminiApiKey);
 
             // Fetch Session History
             const sessionsResponse = await fetch(`/api/sessions?userId=${user.uid}`);
