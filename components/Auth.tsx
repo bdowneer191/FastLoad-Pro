@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth, githubProvider } from '../services/firebase';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import Icon from './Icon';
 
 const Auth = () => {
@@ -17,6 +18,14 @@ const Auth = () => {
             } else {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await sendEmailVerification(userCredential.user);
+                const user = userCredential.user;
+                const db = getFirestore();
+                await setDoc(doc(db, "users", user.uid), {
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    freeTrialUsage: 0,
+                });
                 setError('A verification email has been sent to your email address. Please verify your email before logging in.');
             }
         } catch (err: any) {
