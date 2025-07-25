@@ -4,20 +4,21 @@ import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/
 import { auth } from '../services/firebase';
 
 export async function POST(request: Request): Promise<Response> {
-  const { urlToScan } = await request.json();
-  const pageSpeedApiKey = process.env.DEFAULT_PAGESPEED_API_KEY;
-  const geminiApiKey = process.env.DEFAULT_GEMINI_API_KEY;
-
-  if (!pageSpeedApiKey || !geminiApiKey) {
-    return new Response('Default API keys are not configured.', { status: 500 });
-  }
-
-  const idToken = request.headers.get('Authorization')?.split('Bearer ')[1];
-  if (!idToken) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
   try {
+    const { urlToScan } = await request.json();
+    const pageSpeedApiKey = process.env.DEFAULT_PAGESPEED_API_KEY;
+    const geminiApiKey = process.env.DEFAULT_GEMINI_API_KEY;
+
+    if (!pageSpeedApiKey || !geminiApiKey) {
+      console.error('Default API keys are not configured.');
+      return new Response(JSON.stringify({ error: 'Default API keys are not configured.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const idToken = request.headers.get('Authorization')?.split('Bearer ')[1];
+    if (!idToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const decodedToken = await auth.verifyIdToken(idToken);
     const userId = decodedToken.uid;
     const db = getFirestore();
@@ -27,7 +28,7 @@ export async function POST(request: Request): Promise<Response> {
     const freeTrialUsage = userData?.freeTrialUsage || 0;
 
     if (freeTrialUsage >= 2) {
-      return new Response('Free trial limit exceeded.', { status: 403 });
+      return new Response(JSON.stringify({ error: 'Free trial limit exceeded.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
     const pageSpeedReport = await fetchPageSpeedReport(pageSpeedApiKey, urlToScan);
@@ -62,6 +63,7 @@ export async function POST(request: Request): Promise<Response> {
       },
     });
   } catch (error: any) {
+    console.error('Error in /api/free-measure:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
