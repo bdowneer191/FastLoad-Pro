@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
-import { generateOptimizationPlan } from '../../services/geminiService';
-import { fetchPageSpeedReport } from '../../services/pageSpeedService';
+import { generateOptimizationPlan } from '../services/geminiService';
+import { fetchPageSpeedReport } from '../services/pageSpeedService';
 
 // Initialize Firebase Admin if not already initialized
 const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_CONFIG || '{}');
