@@ -1,7 +1,8 @@
+import { SVGProps } from 'react';
 
-import React from 'react';
+type IconName = 'upload' | 'clipboard' | 'download' | 'magic' | 'lightbulb' | 'key' | 'chevronDown' | 'history' | 'trash' | 'sheet' | 'lock' | 'play' | 'github' | 'reddit' | 'spinner' | 'save' | 'close' | 'edit' | 'delete' | 'scan' | 'chevronUp';
 
-const icons = {
+const icons: Record<IconName, JSX.Element> = {
   upload: (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -37,6 +38,11 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
     </svg>
   ),
+    chevronUp: (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+    </svg>
+    ),
   history: (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -71,11 +77,23 @@ const icons = {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12.0001 21.6001C17.3026 21.6001 21.6001 17.3026 21.6001 12.0001C21.6001 6.69757 17.3026 2.40002 12.0001 2.40002C6.69757 2.40002 2.40002 6.69757 2.40002 12.0001C2.40002 17.3026 6.69757 21.6001 12.0001 21.6001ZM12.0001 19.2001C8.02952 19.2001 4.80002 15.9706 4.80002 12.0001C4.80002 8.02952 8.02952 4.80002 12.0001 4.80002C15.9706 4.80002 19.2001 8.02952 19.2001 12.0001C19.2001 15.9706 15.9706 19.2001 12.0001 19.2001ZM12.0001 11.5201C11.1669 11.5201 10.4688 11.1235 10.012 10.4668C9.93922 10.356 9.80942 10.3013 9.67562 10.3341L7.75122 10.8241C7.62772 10.8543 7.53032 10.9631 7.51992 11.0906C7.50952 11.218 7.59002 11.3342 7.71212 11.3592L9.63652 11.8492C10.0384 12.8258 10.9416 13.5201 12.0001 13.5201C13.0585 13.5201 13.9617 12.8258 14.3636 11.8492L16.288 11.3592C16.4101 11.3342 16.4906 11.218 16.4802 11.0906C16.4698 10.9631 16.3724 10.8543 16.2489 10.8241L14.3245 10.3341C14.1907 10.3013 14.0609 10.356 13.9881 10.4668C13.5313 11.1235 12.8332 11.5201 12.0001 11.5201ZM8.40002 8.76002C8.99522 8.76002 9.48002 8.27522 9.48002 7.68002C9.48002 7.08482 8.99522 6.60002 8.40002 6.60002C7.80482 6.60002 7.32002 7.08482 7.32002 7.68002C7.32002 8.27522 7.80482 8.76002 8.40002 8.76002ZM15.6001 8.76002C16.1953 8.76002 16.6801 8.27522 16.6801 7.68002C16.6801 7.08482 16.1953 6.60002 15.6001 6.60002C15.0049 6.60002 14.5201 7.08482 14.5201 7.68002C14.5201 8.27522 15.0049 8.76002 15.6001 8.76002ZM14.4553 15.1118C14.2237 14.7891 13.8823 14.5715 13.5013 14.4981C12.8713 14.3781 11.1298 14.3781 10.4998 14.4981C10.1188 14.5715 9.77742 14.7891 9.54492 15.1118C9.32472 15.4184 9.25542 15.7981 9.35622 16.1558C9.45702 16.5134 9.71802 16.8122 10.0717 16.9634C10.8718 17.3018 13.1283 17.3018 13.9284 16.9634C14.2821 16.8122 14.5431 16.5134 14.6439 16.1558C14.7447 15.7981 14.6754 15.4184 14.4553 15.1118Z"/>
     </svg>
-  )
+  ),
+    spinner: <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>,
+    save: <span>Save</span>,
+    close: <span>Close</span>,
+    edit: <span>Edit</span>,
+    delete: <span>Delete</span>,
+    scan: <span>Scan</span>,
 };
 
-const Icon = ({ name, className = 'w-6 h-6' }) => {
+interface IconProps extends SVGProps<SVGSVGElement> {
+    name: IconName;
+    className?: string;
+}
+
+const Icon = ({ name, className = 'w-6 h-6' }: IconProps) => {
   return <div className={className}>{icons[name]}</div>;
 };
 
 export default Icon;
+export type { IconName };

@@ -32,6 +32,10 @@ export const generateOptimizationPlan = async (apiKey: string, pageSpeedReport: 
         }
     });
     
+    if (!response.text) {
+        return [{ title: 'Error', description: 'Failed to generate an AI optimization plan. The AI service may be temporarily unavailable or the API key is invalid.', priority: 'High' }];
+    }
+
     return JSON.parse(response.text.trim());
 
   } catch (error) {
@@ -84,6 +88,10 @@ export const generateComparisonAnalysis = async (apiKey: string, reportBefore: a
         }
     });
     
+    if (!response.text) {
+        return null;
+    }
+
     return JSON.parse(response.text.trim());
 
   } catch (error) {

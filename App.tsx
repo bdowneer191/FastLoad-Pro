@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, ChangeEvent, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
@@ -10,9 +10,7 @@ import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { useUserData } from './hooks/useUserData.ts';
-import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
-import { fetchPageSpeedReport } from './services/pageSpeedService.ts';
-import { Recommendation, Session, ImpactSummary } from './types.ts';
+import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
 
 const initialOptions = {
   stripComments: true,
@@ -38,7 +36,13 @@ const initialOptions = {
   optimizeVideoElements: true,
 };
 
-const Step = ({ number, title, children }) => (
+interface StepProps {
+    number: number;
+    title: string;
+    children: ReactNode;
+}
+
+const Step = ({ number, title, children }: StepProps) => (
     <div className="p-6 bg-brand-surface rounded-xl border border-brand-border relative overflow-hidden transition-all duration-300 hover:border-brand-accent-start hover:shadow-lg">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-accent-start/30 to-transparent"></div>
         <h2 className="text-xl font-semibold mb-4 text-brand-accent-start flex items-center">
@@ -49,40 +53,14 @@ const Step = ({ number, title, children }) => (
     </div>
 );
 
-const ApiKeyInput = ({ label, value, onChange, isEditing, onEdit, isSaving, onSave, onDelete }) => (
-    <div>
-        <label className="text-sm font-medium text-brand-text-secondary mb-1 block">{label}</label>
-        <div className="flex gap-2">
-            <input
-                type={isEditing ? 'text' : 'password'}
-                value={isEditing ? value : (value ? '••••••••••••••••••••••••••••••••••' : '')}
-                onChange={onChange}
-                readOnly={!isEditing}
-                placeholder={`Enter your ${label}`}
-                className="w-full p-3 pl-4 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors disabled:opacity-70"
-                autoComplete="new-password"
-                disabled={!isEditing || isSaving}
-            />
-             {isEditing ? (
-                <button onClick={onSave} disabled={isSaving || !value} className="flex items-center justify-center gap-2 w-28 py-3 px-4 bg-brand-success text-white rounded-lg font-semibold transition-all duration-300 disabled:bg-brand-surface disabled:text-brand-text-secondary">
-                    {isSaving ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Save'}
-                </button>
-            ) : (
-                <button onClick={onEdit} className="w-28 py-3 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-lg font-semibold transition-colors">
-                    Edit
-                </button>
-            )}
-            <button onClick={onDelete} disabled={isSaving} className="w-28 py-3 px-4 bg-brand-danger text-white rounded-lg font-semibold transition-colors">
-                {isSaving ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Delete'}
-            </button>
-        </div>
-    </div>
-);
+interface ScoreCircleProps {
+    score: number;
+    size?: number;
+}
 
-
-const ScoreCircle = ({ score, size = 60 }) => {
+const ScoreCircle = ({ score, size = 60 }: ScoreCircleProps) => {
     const scoreValue = score ? Math.round(score * 100) : 0;
-    const getScoreColor = (s) => {
+    const getScoreColor = (s: number) => {
         if (s >= 90) return { main: 'text-brand-success', trail: 'text-brand-success/20' };
         if (s >= 50) return { main: 'text-brand-warning', trail: 'text-brand-warning/20' };
         return { main: 'text-brand-danger', trail: 'text-brand-danger/20' };
@@ -114,22 +92,27 @@ const ScoreCircle = ({ score, size = 60 }) => {
     );
 };
 
-const PageSpeedScores = ({ report, comparisonReport = null }) => {
+interface PageSpeedScoresProps {
+    report: { mobile: PageSpeedReport, desktop: PageSpeedReport } | null;
+    comparisonReport?: { mobile: PageSpeedReport, desktop: PageSpeedReport } | null;
+}
+
+const PageSpeedScores = ({ report, comparisonReport = null }: PageSpeedScoresProps) => {
     if (!report) return null;
     
     const categories = ['performance', 'accessibility', 'best-practices', 'seo'];
-    const getCategoryName = (id) => id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const getCategoryName = (id: string) => id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-    const renderScores = (data, compareData = null) => {
+    const renderScores = (data: PageSpeedReport | null, compareData: PageSpeedReport | null = null) => {
       return categories.map(catId => {
-        const category = data?.lighthouseResult.categories[catId];
+        const category = data?.lighthouseResult.categories[catId as keyof typeof data.lighthouseResult.categories];
         if (!category) return null;
-        const compareCategory = compareData?.lighthouseResult.categories[catId];
+        const compareCategory = compareData?.lighthouseResult.categories[catId as keyof typeof compareData.lighthouseResult.categories];
         const scoreDiff = compareCategory ? Math.round(compareCategory.score * 100) - Math.round(category.score * 100) : null;
         
         return (
           <div key={catId} className="text-center p-2 bg-brand-background rounded-lg flex flex-col items-center justify-start h-full">
-            <p className="text-xs font-semibold text-brand-text-secondary mb-2 h-8 flex items-center text-center justify-center">{getCategoryName(category.title)}</p>
+            <p className="text-xs font-semibold text-brand-text-secondary mb-2 h-8 flex items-center text-center justify-center">{getCategoryName(catId)}</p>
             <div className="flex-grow flex items-center justify-center w-full">
                 <div className="flex items-center justify-around w-full">
                     <div className="flex flex-col items-center">
@@ -179,7 +162,18 @@ const PageSpeedScores = ({ report, comparisonReport = null }) => {
     );
 };
 
-const CheckboxOption = ({ name, checked, onChange, label, description, isRecommended = false, isRisky = false, disabled = false }) => (
+interface CheckboxOptionProps {
+    name: string;
+    checked: boolean;
+    onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+    label: string;
+    description: string;
+    isRecommended?: boolean;
+    isRisky?: boolean;
+    disabled?: boolean;
+}
+
+const CheckboxOption = ({ name, checked, onChange, label, description, isRecommended = false, isRisky = false, disabled = false }: CheckboxOptionProps) => (
     <label className={`flex items-start space-x-3 p-3 rounded-lg hover:bg-brand-background transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
         <input 
             type="checkbox" 
@@ -208,11 +202,11 @@ const App = () => {
   
   
   const [isMeasuring, setIsMeasuring] = useState(false);
-  const [pageSpeedBefore, setPageSpeedBefore] = useState(null);
-  const [pageSpeedAfter, setPageSpeedAfter] = useState(null);
+  const [pageSpeedBefore, setPageSpeedBefore] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
+  const [pageSpeedAfter, ] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
   const [optimizationPlan, setOptimizationPlan] = useState<Recommendation[] | null>(null);
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-  const [comparisonAnalysis, setComparisonAnalysis] = useState(null);
+  const [isGeneratingPlan, ] = useState(false);
+  const [comparisonAnalysis, ] = useState<any>(null);
   const [apiError, setApiError] = useState('');
   const [sessionLoadError, setSessionLoadError] = useState('');
 
@@ -224,7 +218,7 @@ const App = () => {
   const { isCleaning, cleanHtml } = useCleaner();
   const [aiAppliedNotification, setAiAppliedNotification] = useState('');
   
-  const [currentSession, setCurrentSession] = useState<{ url: string; startTime: string; } | null>(null);
+  const [currentSession, ] = useState<{ url: string; startTime: string; } | null>(null);
   const [sessionLog, setSessionLog] = useState<Session[]>([]);
 
   const { userData } = useUserData(user);
@@ -249,7 +243,7 @@ const App = () => {
                  const errorData = await keysResponse.json().catch(() => ({ message: 'Failed to fetch API keys. The server response was not valid JSON.' }));
                  throw new Error(errorData.message || 'Failed to fetch API keys due to a server error.');
             }
-            const keysData = await keysResponse.json();
+            await keysResponse.json();
 
             // Fetch Session History
             const sessionsResponse = await fetch(`/api/sessions?userId=${user.uid}`);
@@ -303,7 +297,7 @@ const App = () => {
     }
   };
 
-  const handleOptionChange = (e) => {
+  const handleOptionChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setOptions(prev => ({ ...prev, [name]: checked }));
   };
@@ -345,7 +339,7 @@ const App = () => {
       URL.revokeObjectURL(url);
   };
   
-  const formattedBytes = (bytes) => {
+  const formattedBytes = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -374,7 +368,7 @@ const App = () => {
   }
 
   if (!user.emailVerified) {
-    return <VerifyEmail />;
+    return <VerifyEmail user={user} />;
   }
 
   return (
@@ -388,7 +382,7 @@ const App = () => {
           </div>
         </header>
         <div className="absolute top-6 right-6 z-50">
-            <UserProfile user={user} />
+            <UserProfile user={user} onOpenSettings={() => {}} />
         </div>
         
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -400,7 +394,7 @@ const App = () => {
               <SessionLog sessions={sessionLog} setSessions={setSessionLog} userId={user.uid} />
               {sessionLoadError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{sessionLoadError}</p>}
             </div>
-            <Step number="1" title="Measure Your Page Speed">
+            <Step number={1} title="Measure Your Page Speed">
                 {currentSession && <SessionTimer startTime={currentSession.startTime} />}
                 <p className="text-sm text-brand-text-secondary mb-3">
                   You have {2 - (userData.freeTrialUsage || 0)} free trials remaining.
@@ -418,7 +412,7 @@ const App = () => {
             </Step>
 
             {(optimizationPlan || comparisonAnalysis || isGeneratingPlan) && (
-                <Step number="2" title={comparisonAnalysis ? "Comparison Analysis" : "AI Optimization Plan"}>
+                <Step number={2} title={comparisonAnalysis ? "Comparison Analysis" : "AI Optimization Plan"}>
                    {isGeneratingPlan && <p className="text-sm text-center text-brand-text-secondary animate-subtle-pulse">Generating AI analysis...</p>}
                     {optimizationPlan && !comparisonAnalysis && (
                          <div className="space-y-3">
@@ -439,21 +433,21 @@ const App = () => {
                             <div>
                                <h3 className="font-semibold text-brand-success mb-1">Improvements</h3>
                                <ul className="list-disc list-inside text-sm text-brand-text-secondary space-y-1 p-3 bg-brand-background rounded-lg border border-brand-border/50">
-                                  {comparisonAnalysis.improvements.map((item,i) => <li key={i}>{item}</li>)}
+                                  {comparisonAnalysis.improvements.map((item: string,i: number) => <li key={i}>{item}</li>)}
                                </ul>
                             </div>
                             {comparisonAnalysis.regressions?.length > 0 && (
                                 <div>
                                    <h3 className="font-semibold text-brand-warning mb-1">Regressions</h3>
                                    <ul className="list-disc list-inside text-sm text-brand-text-secondary space-y-1 p-3 bg-brand-background rounded-lg border border-brand-border/50">
-                                      {comparisonAnalysis.regressions.map((item,i) => <li key={i}>{item}</li>)}
+                                      {comparisonAnalysis.regressions.map((item: string,i: number) => <li key={i}>{item}</li>)}
                                    </ul>
                                 </div>
                             )}
                             <div>
                                <h3 className="font-semibold text-brand-accent-end mb-1">Final Recommendations</h3>
                                <div className="space-y-2">
-                                  {comparisonAnalysis.finalRecommendations.map((rec,i) => <div key={i} className="p-3 bg-brand-background rounded-lg border border-brand-border/50"><h4 className="font-semibold text-brand-text-primary">{rec.title}</h4><p className="text-sm text-brand-text-secondary">{rec.description}</p></div>)}
+                                  {comparisonAnalysis.finalRecommendations.map((rec: Recommendation,i: number) => <div key={i} className="p-3 bg-brand-background rounded-lg border border-brand-border/50"><h4 className="font-semibold text-brand-text-primary">{rec.title}</h4><p className="text-sm text-brand-text-secondary">{rec.description}</p></div>)}
                                </div>
                             </div>
                         </div>
@@ -471,7 +465,7 @@ const App = () => {
                 </div>
             )}
             <div className={`flex flex-col gap-6 ${isCleaningLocked ? 'opacity-40 pointer-events-none' : ''}`}>
-                <Step number="3" title="Clean Your Post HTML">
+                <Step number={3} title="Clean Your Post HTML">
                     <p className="text-sm text-brand-text-secondary mb-3">Paste your post's HTML (from the 'Text' or 'Code' editor) below to apply automated cleaning and optimizations.</p>
                     <textarea value={originalHtml} onChange={(e) => setOriginalHtml(e.target.value)} placeholder="Paste the full 'Text' view code of your WP post here..." className="w-full h-48 p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
                     
@@ -586,7 +580,7 @@ const App = () => {
                 </Step>
                 
                 {cleanedHtml && impact && (
-                    <Step number="4" title="Get Cleaned Code & Compare">
+                    <Step number={4} title="Get Cleaned Code & Compare">
                         <p className="text-sm text-brand-text-secondary mb-3">Your cleaned HTML is ready. Copy it and replace the code in your post editor. Then, click "Compare Speed" in Step 1 to see the results.</p>
                         <div className="relative">
                             <textarea readOnly value={cleanedHtml} className="w-full h-48 p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-success focus:outline-none text-sm font-mono transition-colors" />

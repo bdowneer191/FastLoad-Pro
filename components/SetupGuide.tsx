@@ -1,7 +1,5 @@
-
-
-import React, { useState } from 'react';
-import Icon from './Icon.tsx';
+import { useState } from 'react';
+import Icon from './Icon';
 
 const SetupGuide = () => {
     const [isOpen, setIsOpen] = useState(false);

@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
-import { sendEmailVerification } from 'firebase/auth';
+import { useState } from 'react';
+import { sendEmailVerification, User } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
-const VerifyEmail = () => {
+interface VerifyEmailProps {
+    user: User;
+}
+
+const VerifyEmail = ({ user }: VerifyEmailProps) => {
     const [message, setMessage] = useState('');
 
     const handleResendVerification = async () => {
@@ -24,7 +28,7 @@ const VerifyEmail = () => {
                     Verify Your Email
                 </h1>
                 <p className="text-lg text-brand-text-secondary mb-8">
-                    A verification email has been sent to your email address. Please check your inbox and click the link to verify your account.
+                    A verification email has been sent to {user.email}. Please check your inbox and click the link to verify your account.
                 </p>
 
                 {message && <p className="mb-4 text-sm text-brand-danger">{message}</p>}
