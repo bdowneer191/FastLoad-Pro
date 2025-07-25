@@ -1,7 +1,7 @@
-import { fetchPageSpeedReport } from '/services/pageSpeedService.js';
-import { generateOptimizationPlan } from '/services/geminiService.js';
+import { fetchPageSpeedReport } from '../../services/pageSpeedService.js';
+import { generateOptimizationPlan } from '../../services/geminiService.js';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
-import { auth } from '/services/firebase.js';
+import { auth } from '../../services/firebase.js';
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -34,7 +34,8 @@ export async function POST(request: Request): Promise<Response> {
     const pageSpeedReport = await fetchPageSpeedReport(pageSpeedApiKey, urlToScan);
     const optimizationPlan = await generateOptimizationPlan(geminiApiKey, pageSpeedReport);
 
-    const getScore = (report, strategy) => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
+    // Add 'any' type to report and strategy to fix the implicit any error
+    const getScore = (report: any, strategy: any) => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
 
     const session = {
       url: urlToScan,
