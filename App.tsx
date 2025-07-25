@@ -342,12 +342,41 @@ const App = () => {
 
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
-    if (!pageSpeedApiKey) { setApiError('Please provide and save your PageSpeed API Key to measure speed.'); return; }
-    
+
     setIsMeasuring(true);
     setApiError('');
     setSessionLoadError('');
 
+    if (!pageSpeedApiKey) {
+      // Free trial logic
+      try {
+        const idToken = await user?.getIdToken();
+        const response = await fetch('/api/free-measure', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ urlToScan: url }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch free measurement.');
+        }
+
+        const { pageSpeedReport, optimizationPlan } = await response.json();
+        setPageSpeedBefore(pageSpeedReport);
+        setOptimizationPlan(optimizationPlan);
+      } catch (error: any) {
+        setApiError(error.message);
+      } finally {
+        setIsMeasuring(false);
+      }
+      return;
+    }
+
+    // Paid user logic
     if (!pageSpeedBefore) {
         setOptimizationPlan(null);
         setComparisonAnalysis(null);
@@ -526,7 +555,9 @@ const App = () => {
             </div>
             <Step number="1" title="Measure Your Page Speed">
                 {currentSession && <SessionTimer startTime={currentSession.startTime} />}
-                <p className="text-sm text-brand-text-secondary mb-3">Manage your API keys below, then enter a URL to get a baseline performance report.</p>
+                <p className="text-sm text-brand-text-secondary mb-3">
+                  { !pageSpeedApiKey ? "You are on a free trial. To unlock all features, please add your own API keys." : "Manage your API keys below, then enter a URL to get a baseline performance report." }
+                </p>
                  <div className="space-y-4 p-4 rounded-lg bg-brand-surface border border-brand-border mb-4">
                      <ApiKeyInput
                         label="Gemini API Key"
