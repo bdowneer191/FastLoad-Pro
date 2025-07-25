@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { ChangeEvent } from 'react';
 import { User, updateProfile, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { useUserData } from '../hooks/useUserData';
 
 interface UserSettingsModalProps {
     user: User;
@@ -9,7 +8,7 @@ interface UserSettingsModalProps {
     onClose: () => void;
 }
 
-const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ user, isOpen, onClose }) => {
+const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) => {
     if (!isOpen) return null;
 
     return (
@@ -35,7 +34,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ user, isOpen, onC
                                 id="avatar-upload"
                                 className="hidden"
                                 accept="image/png, image/jpeg"
-                                onChange={async (event) => {
+                                onChange={async (event: ChangeEvent<HTMLInputElement>) => {
                                     if (!event.target.files) return;
 
                                     const file = event.target.files[0];

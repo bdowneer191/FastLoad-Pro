@@ -1,8 +1,7 @@
-
-import React, { useState, useMemo } from 'react';
-import Icon from './Icon.tsx';
-import { getDhakaDate, formatDuration, isWithinLast24Hours } from '../utils/time.ts';
-import { Session } from '../types.ts';
+import { useState, useMemo } from 'react';
+import Icon from './Icon';
+import { getDhakaDate, formatDuration, isWithinLast24Hours } from '../utils/time';
+import { Session } from '../types';
 
 interface SessionLogProps {
     sessions: Session[];
@@ -10,7 +9,12 @@ interface SessionLogProps {
     userId: string | null;
 }
 
-const ScoreDiff = ({ before, after }) => {
+interface ScoreDiffProps {
+    before: number;
+    after: number;
+}
+
+const ScoreDiff = ({ before, after }: ScoreDiffProps) => {
     if (before === undefined || after === undefined) return null;
     const diff = Math.round(after * 100) - Math.round(before * 100);
     const color = diff > 0 ? 'text-brand-success' : diff < 0 ? 'text-brand-danger' : 'text-brand-text-secondary';
@@ -46,7 +50,7 @@ const convertToCSV = (sessions: Session[]): string => {
     return [headers.join(','), ...rows].join('\n');
 };
 
-const SessionLog: React.FC<SessionLogProps> = ({ sessions, setSessions, userId }) => {
+const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
     const [isOpen, setIsOpen] = useState(true);
     const [isClearing, setIsClearing] = useState(false);
     const [showAll, setShowAll] = useState(false);

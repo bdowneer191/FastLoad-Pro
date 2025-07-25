@@ -1,5 +1,25 @@
 
 
+export interface PageSpeedReport {
+    lighthouseResult: {
+        audits: any;
+        categories: {
+            performance: {
+                score: number;
+            };
+            accessibility: {
+                score: number;
+            };
+            'best-practices': {
+                score: number;
+            };
+            seo: {
+                score: number;
+            };
+        };
+    };
+}
+
 export interface Session {
   id?: string;
   url: string;

@@ -1,6 +1,7 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import * as admin from 'firebase-admin';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { generateOptimizationPlan } from '../services/geminiService';
+import { fetchPageSpeedReport } from '../services/pageSpeedService';
 
 // Initialize Firebase Admin if not already initialized
 const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_CONFIG || '{}');
@@ -10,76 +11,6 @@ if (!admin.apps.length) {
   });
 }
 const auth = admin.auth();
-
-// PageSpeed Service Functions
-const runPageSpeedForStrategy = async (apiKey: string, pageUrl: string, strategy: 'mobile' | 'desktop') => {
-  if (!apiKey) {
-      throw new Error("Google API Key has not been provided. Please add it in the configuration section.");
-  }
-  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(pageUrl)}&key=${apiKey}&strategy=${strategy}&category=PERFORMANCE&category=ACCESSIBILITY&category=BEST_PRACTICES&category=SEO`;
-
-  const response = await fetch(apiUrl);
-  if (!response.ok) {
-      const errorData = await response.json();
-      const message = errorData?.error?.message || `Failed to fetch PageSpeed data for ${strategy}. Status: ${response.status}. Please check your URL and API Key.`;
-      throw new Error(message);
-  }
-  return response.json();
-};
-
-const fetchPageSpeedReport = async (apiKey: string, url: string) => {
-    try {
-        const [mobile, desktop] = await Promise.all([
-            runPageSpeedForStrategy(apiKey, url, 'mobile'),
-            runPageSpeedForStrategy(apiKey, url, 'desktop')
-        ]);
-        return { mobile, desktop };
-    } catch (error) {
-        console.error("Error fetching PageSpeed report:", error);
-        throw error;
-    }
-};
-
-// Gemini Service Functions
-const generateOptimizationPlan = async (apiKey: string, pageSpeedReport: any) => {
-  if (!apiKey) {
-    return [{ title: 'Missing API Key', description: 'Please provide a Gemini API key to generate an AI optimization plan.', priority: 'High' }];
-  }
-  const ai = new GoogleGenAI({ apiKey });
-
-  const relevantData = {
-      categories: pageSpeedReport.mobile.lighthouseResult.categories,
-      audits: pageSpeedReport.mobile.lighthouseResult.audits,
-  };
-
-  try {
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `You are a world-class web performance engineer specializing in WordPress and Core Web Vitals. Analyze this mobile PageSpeed Insights report. Create an extremely aggressive, high-impact, prioritized plan. Assume the user is willing to make significant changes for maximum speed. Focus on surgically eliminating render-blocking resources, optimizing the Critical Rendering Path, and crushing LCP, FID, and CLS scores. Be very specific (e.g., 'Use Perfmatters or a code snippet to disable these specific scripts on these pages,' 'Generate Critical CSS for your homepage and inline it, then load the main stylesheet asynchronously'). The goal is a perfect or near-perfect score. Provide a JSON array of objects with "title", "description", and "priority" ('High', 'Medium', 'Low'). Report: ${JSON.stringify(relevantData)}`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                priority: { type: Type.STRING }
-              },
-              required: ['title', 'description', 'priority']
-            }
-          }
-        }
-    });
-
-    return JSON.parse(response.text.trim());
-
-  } catch (error) {
-    console.error("Error generating optimization plan:", error);
-    return [{ title: 'Error', description: 'Failed to generate an AI optimization plan. The AI service may be temporarily unavailable or the API key is invalid.', priority: 'High' }];
-  }
-};
 
 export async function POST(request: Request): Promise<Response> {
   try {

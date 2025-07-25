@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
-import { User, signOut } from 'firebase/auth';
-import { auth } from '../services/firebase.ts';
-import UserSettingsModal from './UserSettingsModal.tsx';
+import { User } from 'firebase/auth';
 
 interface UserProfileProps {
     user: User;
+    onOpenSettings: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
+const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
     if (!user) return null;
 
     return (
         <>
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setIsModalOpen(true)}>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={onOpenSettings}>
                 <img
                     src={user.photoURL || undefined}
                     alt={user.displayName || 'User Avatar'}
@@ -24,7 +20,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                     <p className="font-semibold text-sm text-brand-text-primary">{user.displayName}</p>
                 </div>
             </div>
-            <UserSettingsModal user={user} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </>
     );
 };
