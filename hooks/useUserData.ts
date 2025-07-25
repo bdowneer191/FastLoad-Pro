@@ -6,6 +6,7 @@ import { User } from 'firebase/auth';
 interface UserData {
     geminiApiKey?: string;
     pageSpeedApiKey?: string;
+    freeTrialUsage?: number;
 }
 
 export const useUserData = (user: User | null) => {

@@ -9,6 +9,7 @@ import Auth from './components/Auth.tsx';
 import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
+import { useUserData } from './hooks/useUserData.ts';
 import { generateOptimizationPlan, generateComparisonAnalysis } from './services/geminiService.ts';
 import { fetchPageSpeedReport } from './services/pageSpeedService.ts';
 import { Recommendation, Session, ImpactSummary } from './types.ts';
@@ -226,6 +227,8 @@ const App = () => {
   const [currentSession, setCurrentSession] = useState<{ url: string; startTime: string; } | null>(null);
   const [sessionLog, setSessionLog] = useState<Session[]>([]);
 
+  const { userData } = useUserData(user);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
@@ -404,11 +407,11 @@ const App = () => {
             <Step number="1" title="Measure Your Page Speed">
                 {currentSession && <SessionTimer startTime={currentSession.startTime} />}
                 <p className="text-sm text-brand-text-secondary mb-3">
-                  Enter a URL to get a baseline performance report.
+                  You have {2 - (userData.freeTrialUsage || 0)} free trials remaining.
                 </p>
                 <div className="flex gap-2">
                     <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
-                    <button onClick={handleMeasure} disabled={isMeasuring || !url || !pageSpeedApiKey || isEditingPageSpeedKey} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
+                    <button onClick={handleMeasure} disabled={isMeasuring || !url || (userData.freeTrialUsage || 0) >= 2} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
                       {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
                       {pageSpeedBefore ? 'Compare Speed' : 'Measure Speed'}
                     </button>
