@@ -6,17 +6,17 @@ import { fetchPageSpeedReport } from '../services/pageSpeedService.js';
 // Safely initialize Firebase Admin
 try {
   if (!admin.apps.length) {
-    const serviceAccountString = process.env.FIREBASE_ADMIN_SDK_CONFIG;
-    if (!serviceAccountString) {
-      throw new Error("Firebase admin SDK config is not set in environment variables.");
+    const serviceAccountBase64 = process.env.FIREBASE_ADMIN_SDK_CONFIG;
+    if (!serviceAccountBase64) {
+      throw new Error('The FIREBASE_ADMIN_SDK_CONFIG environment variable is not set.');
     }
-    const serviceAccount = JSON.parse(serviceAccountString);
+    const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+    const serviceAccount = JSON.parse(serviceAccountJson);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
   }
 } catch (e: any) {
-  // This log is critical for debugging Vercel deployment
   console.error("CRITICAL: Failed to initialize Firebase Admin SDK. Check the FIREBASE_ADMIN_SDK_CONFIG format.", e.message);
 }
 
