@@ -116,7 +116,7 @@ export async function POST(request: Request): Promise<Response> {
     console.log('Optimization plan generated.');
 
     // 7. Save Session and Update User Data
-    const getScore = (report, strategy) => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
+    const getScore = (report: any, strategy: 'mobile' | 'desktop') => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
     const session = {
       url: urlToScan,
       startTime: new Date().toISOString(),
