@@ -43,8 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.error(`Error fetching or parsing blob for user ${userId}:`, fetchError);
                 return res.status(200).json(emptyUserData);
             }
-            console.log(`Successfully fetched data for user ${userId}.`);
-            return res.status(200).json(data);
         }
 
         if (req.method === 'POST') {
