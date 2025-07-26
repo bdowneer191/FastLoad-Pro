@@ -1,12 +1,14 @@
 import admin from 'firebase-admin';
 
 // These variables will hold the initialized Firebase services.
-let auth: admin.auth.Auth;
-let db: admin.firestore.Firestore;
+// We add "| null" to let TypeScript know that these variables can hold a null value,
+// which is what happens if the initialization fails in the catch block.
+let auth: admin.auth.Auth | null = null;
+let db: admin.firestore.Firestore | null = null;
 
 // This block of code will only run once when the serverless function is first started.
 try {
-  // Check if the app is already initialized to prevent re-initialization on hot reloads.
+  // Check if the app is already initialized to prevent re-initialization.
   if (!admin.apps.length) {
     // Retrieve the Firebase credentials from environment variables.
     const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -24,9 +26,7 @@ try {
       throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}`);
     }
 
-    // IMPORTANT: When you paste the private key into Vercel, it removes the newlines.
-    // This line of code replaces the "\\n" characters (which Vercel creates) with actual newline characters ("\n"),
-    // which is the format the Firebase Admin SDK expects.
+    // This line correctly formats the private key for the Firebase Admin SDK.
     const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
     // Initialize the Firebase Admin SDK with the credentials.
@@ -47,13 +47,10 @@ try {
 
 } catch (initError) {
   // Log a detailed error message if initialization fails.
-  // This helps in debugging issues with environment variables or credentials.
   console.error('Firebase Admin initialization failed:', initError);
   
-  // In case of an error, explicitly set auth and db to null.
-  // Your API endpoints should check if these are null to handle the error gracefully.
-  auth = null;
-  db = null;
+  // In case of an error, auth and db remain null. Your API endpoints
+  // should check for this to handle the error gracefully.
 }
 
 // Export the auth and firestore services to be used in your API routes.
