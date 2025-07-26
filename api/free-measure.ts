@@ -3,28 +3,56 @@ import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/
 import { generateOptimizationPlan } from '../services/geminiService.js';
 import { fetchPageSpeedReport } from '../services/pageSpeedService.js';
 
-// Check if Firebase Admin is already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    })
-  });
-}
+// Safe Firebase Admin initialization check
+let auth: admin.auth.Auth;
+let db: admin.firestore.Firestore;
 
-const auth = admin.auth();
+try {
+  // Check if Firebase Admin is already initialized
+  if (!admin.apps || admin.apps.length === 0) {
+    // Validate required environment variables
+    const requiredEnvVars = {
+      FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+      FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
+      FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL
+    };
+
+    const missingVars = Object.entries(requiredEnvVars)
+      .filter(([key, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingVars.length > 0) {
+      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    }
+
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: requiredEnvVars.FIREBASE_PROJECT_ID!,
+        privateKey: requiredEnvVars.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+        clientEmail: requiredEnvVars.FIREBASE_CLIENT_EMAIL!,
+      })
+    });
+  }
+
+  auth = admin.auth();
+  db = admin.firestore();
+} catch (initError) {
+  console.error('Firebase Admin initialization failed:', initError);
+  // We'll handle this in the API function
+}
 
 export async function POST(request: Request): Promise<Response> {
   try {
     console.log('=== Free Measure API Endpoint Called ===');
 
     // 1. Check for Firebase initialization
-    if (!auth) {
-        console.error("API Error: Firebase Auth is not initialized. The server configuration is incorrect.");
-        return new Response(JSON.stringify({ error: 'Server configuration error: Firebase not initialized.' }), {
-            status: 500, headers: { 'Content-Type': 'application/json' }
+    if (!auth || !db) {
+        console.error("API Error: Firebase Auth/Firestore is not initialized. The server configuration is incorrect.");
+        return new Response(JSON.stringify({ 
+          error: 'Server configuration error: Firebase not initialized. Please check environment variables.' 
+        }), {
+            status: 500, 
+            headers: { 'Content-Type': 'application/json' }
         });
     }
 
@@ -83,11 +111,10 @@ export async function POST(request: Request): Promise<Response> {
     console.log('API keys are present.');
 
     // 5. Check Free Trial Usage in Firestore
-    const db = getFirestore();
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = db.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
         console.log(`User document for UID ${userId} does not exist. Assuming 0 usage.`);
     }
 
@@ -123,10 +150,10 @@ export async function POST(request: Request): Promise<Response> {
       userId: userId,
     };
 
-    await addDoc(collection(db, 'sessions'), session);
+    await db.collection('sessions').add(session);
     console.log('Session saved to Firestore.');
 
-    await setDoc(userDocRef, { freeTrialUsage: freeTrialUsage + 1 }, { merge: true });
+    await userDocRef.set({ freeTrialUsage: freeTrialUsage + 1 }, { merge: true });
     console.log('User free trial usage updated.');
 
     // 8. Return Success Response
