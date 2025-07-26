@@ -23,9 +23,9 @@ try {
 const auth = admin.apps.length ? admin.auth() : null;
 
 export async function POST(request: Request): Promise<Response> {
-  console.log('=== Free Measure API Endpoint Called ===');
-
   try {
+    console.log('=== Free Measure API Endpoint Called ===');
+
     // 1. Check for Firebase initialization
     if (!auth) {
         console.error("API Error: Firebase Auth is not initialized. The server configuration is incorrect.");
@@ -143,9 +143,11 @@ export async function POST(request: Request): Promise<Response> {
 
   } catch (error: any) {
     console.error('FATAL: An unhandled error occurred in the API function:', error);
+    // Ensure that even in the case of a catastrophic error, a JSON response is returned.
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return new Response(JSON.stringify({
       error: 'An unexpected server error occurred.',
-      details: error.message,
+      details: errorMessage,
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
