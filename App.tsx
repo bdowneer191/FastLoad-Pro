@@ -283,8 +283,19 @@ const App = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch free measurement.');
+        // Attempt to parse JSON, but fall back to text if that fails
+        const errorText = await response.text();
+        let errorMessage = 'An unknown error occurred.';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || 'Failed to fetch free measurement.';
+        } catch (e) {
+          // If JSON parsing fails, the response is likely not JSON.
+          // It could be an HTML error page from the server.
+          console.error("Could not parse error response as JSON:", errorText);
+          errorMessage = `A server error occurred. Please check the server logs. (Received non-JSON response)`;
+        }
+        throw new Error(errorMessage);
       }
 
       const { pageSpeedReport, optimizationPlan } = await response.json();

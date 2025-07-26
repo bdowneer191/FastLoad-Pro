@@ -1,4 +1,5 @@
 import { User } from 'firebase/auth';
+import { useUserData } from '../hooks/useUserData'; // Make sure the path is correct
 
 interface UserProfileProps {
     user: User;
@@ -6,7 +7,11 @@ interface UserProfileProps {
 }
 
 const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
+    const { userData, loading } = useUserData(user);
+
     if (!user) return null;
+
+    const freeTrialsRemaining = 2 - (userData?.freeTrialUsage || 0);
 
     return (
         <>
@@ -18,6 +23,11 @@ const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
                 />
                 <div className="text-right">
                     <p className="font-semibold text-sm text-brand-text-primary">{user.displayName}</p>
+                    {!loading && (
+                        <p className="text-xs text-brand-text-secondary">
+                            {freeTrialsRemaining > 0 ? `${freeTrialsRemaining} free trials left` : 'No free trials'}
+                        </p>
+                    )}
                 </div>
             </div>
         </>

@@ -29,16 +29,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json(emptyUserData);
             }
 
-            const blob = await fetch(blobs[0].url);
-            if (!blob.ok) {
-                 console.error(`Failed to fetch blob from URL ${blobs[0].url}. Status: ${blob.status}`);
-                 // If fetching fails, return default data to prevent client-side error.
-                 return res.status(200).json(emptyUserData);
+            try {
+                const blob = await fetch(blobs[0].url);
+                if (!blob.ok) {
+                    console.error(`Failed to fetch blob from URL ${blobs[0].url}. Status: ${blob.status}`);
+                    // If fetching fails, return default data to prevent client-side error.
+                    return res.status(200).json(emptyUserData);
+                }
+                const data = await blob.json();
+                console.log(`Successfully fetched data for user ${userId}.`);
+                return res.status(200).json(data);
+            } catch (fetchError: any) {
+                console.error(`Error fetching or parsing blob for user ${userId}:`, fetchError);
+                return res.status(200).json(emptyUserData);
             }
-
-            const data = await blob.json();
-            console.log(`Successfully fetched data for user ${userId}.`);
-            return res.status(200).json(data);
         }
 
         if (req.method === 'POST') {
