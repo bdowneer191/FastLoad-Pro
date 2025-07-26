@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin';
-import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { generateOptimizationPlan } from '../services/geminiService.js';
 import { fetchPageSpeedReport } from '../services/pageSpeedService.js';
 
@@ -18,7 +17,7 @@ try {
     };
 
     const missingVars = Object.entries(requiredEnvVars)
-      .filter(([key, value]) => !value)
+      .filter(([, value]) => !value)
       .map(([key]) => key);
 
     if (missingVars.length > 0) {
