@@ -23,9 +23,14 @@ try {
       throw new Error('Invalid Firebase service account configuration. Check the base64 encoding.');
     }
 
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
+    const credential = admin.credential.cert(serviceAccount)
+    if(credential) {
+        admin.initializeApp({
+            credential,
+        });
+    } else {
+        throw new Error('Firebase credential object is undefined.');
+    }
 
     console.log('Firebase Admin SDK initialized successfully');
   }
