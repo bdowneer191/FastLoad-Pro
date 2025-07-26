@@ -3,40 +3,18 @@ import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from 'firebase/
 import { generateOptimizationPlan } from '../services/geminiService.js';
 import { fetchPageSpeedReport } from '../services/pageSpeedService.js';
 
-// Safely initialize Firebase Admin
-let auth: admin.auth.Auth | null = null;
-
-try {
-  // Check if admin object and apps array exist
-  if (!admin.apps || admin.apps.length === 0) {
-    const serviceAccountBase64 = process.env.FIREBASE_ADMIN_SDK_CONFIG;
-    if (!serviceAccountBase64) {
-      throw new Error('The FIREBASE_ADMIN_SDK_CONFIG environment variable is not set.');
-    }
-
-    let serviceAccount;
-    try {
-      const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-      serviceAccount = JSON.parse(serviceAccountJson);
-    } catch (parseError) {
-      console.error('Failed to parse Firebase service account JSON:', parseError);
-      throw new Error('Invalid Firebase service account configuration. Check the base64 encoding.');
-    }
-
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-
-    console.log('Firebase Admin SDK initialized successfully');
-  }
-
-  // Set auth only after successful initialization
-  auth = admin.auth();
-} catch (e: any) {
-  console.error("CRITICAL: Failed to initialize Firebase Admin SDK. Check the FIREBASE_ADMIN_SDK_CONFIG format.", e.message);
-  // Don't set auth if initialization failed
-  auth = null;
+// Check if Firebase Admin is already initialized
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    })
+  });
 }
+
+const auth = admin.auth();
 
 export async function POST(request: Request): Promise<Response> {
   try {
