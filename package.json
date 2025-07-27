@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.9.0",
+    "@stripe/firestore-stripe-payments": "^0.0.6",
     "@vercel/blob": "^0.23.4",
     "firebase": "^10.12.3",
     "firebase-admin": "^13.4.0",
