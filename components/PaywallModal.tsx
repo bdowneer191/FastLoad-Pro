@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
 import { fetchProducts, createSubscriptionCheckout } from '../services/stripePayments';
 
-// --- ✅ FIX 1: Made name and description optional to match potential Firestore data ---
+// --- ✅ FIX 1: Define a separate, clear 'Price' interface ---
+// This is the correct structure for a price object from Stripe.
+interface Price {
+    id: string;
+    unit_amount: number;
+    currency: string;
+}
+
+// --- ✅ FIX 2: Update the 'Product' interface to use the 'Price' interface ---
+// Name and description are made optional to prevent errors if they are null.
 interface Product {
     id: string;
     name?: string;
     description?: string;
-    prices: {
-        id: string;
-        unit_amount: number;
-        currency: string;
-    }[];
+    // A product has an array of 'Price' objects.
+    prices: Price[];
 }
 
 interface PaywallModalProps {
@@ -24,6 +30,7 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
     useEffect(() => {
         const loadProducts = async () => {
             try {
+                // The 'as Product[]' assertion will now work correctly with the updated interfaces.
                 const fetchedProducts = await fetchProducts();
                 setProducts(fetchedProducts as Product[]);
             } catch (error) {
@@ -59,10 +66,10 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {products.map((product, index) => {
-                            // --- ✅ FIX 2: Safely get the first price from the prices array ---
+                            // Safely get the first price.
                             const price = product.prices?.[0];
 
-                            // --- ✅ FIX 3: If there's no price, don't render the card at all. This prevents all crashes. ---
+                            // If a product has no price, don't render it. This prevents crashes.
                             if (!price) {
                                 return null;
                             }
@@ -72,7 +79,7 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                                     key={product.id}
                                     className={`border rounded-lg p-6 flex flex-col ${index === 1 ? 'border-2 border-brand-accent-start' : 'border-brand-border'}`}
                                 >
-                                    {/* ✅ FIX 4: Added a fallback for the product name */}
+                                    {/* ✅ FIX 3: Provide a fallback in case the name is missing */}
                                     <h4 className="text-xl font-bold text-brand-text-primary">{product.name ?? 'Subscription Plan'}</h4>
                                     
                                     <p className="text-3xl font-bold text-brand-text-primary my-4">
@@ -80,11 +87,10 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                                         <span className="text-base font-normal">/mo</span>
                                     </p>
                                     
-                                    {/* ✅ FIX 5: Added a fallback for the product description */}
+                                    {/* Provide a fallback for the description */}
                                     <p className="text-sm text-brand-text-secondary mb-6 h-12">{product.description ?? ''}</p>
                                     
                                     <button
-                                        // This is now safe because we already confirmed a 'price' object exists
                                         onClick={() => goToCheckout(price.id)}
                                         className="mt-auto w-full px-4 py-2 bg-brand-accent-start text-white rounded-lg font-semibold hover:bg-brand-accent-end transition-colors"
                                     >
