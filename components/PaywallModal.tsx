@@ -1,26 +1,24 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
+import { getStripePayments, createCheckoutSession } from '@invertase/firestore-stripe-payments';
 
 interface PaywallModalProps {
     onClose: () => void;
 }
 
+const payments = getStripePayments(getApp(), {
+    productsCollection: "products",
+    customersCollection: "customers",
+});
+
 const PaywallModal = ({ onClose }: PaywallModalProps) => {
     const goToCheckout = async (priceId: string) => {
         try {
-            const functions = getFunctions(getApp(), 'us-central1');
-            const createCheckoutSession = httpsCallable(
-                functions,
-                'ext-firestore-stripe-payments-createCheckoutSession'
-            );
-
-            const session = await createCheckoutSession({
+            const session = await createCheckoutSession(payments, {
                 price: priceId,
                 success_url: window.location.href,
                 cancel_url: window.location.href,
             });
-
-            window.location.assign((session.data as any).url);
+            window.location.assign(session.url);
         } catch (error) {
             console.error("Could not create checkout session:", error);
             alert("Error: Could not start the payment process.");
