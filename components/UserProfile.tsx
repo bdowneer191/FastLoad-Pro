@@ -1,12 +1,14 @@
 import { User } from 'firebase/auth';
 import { useUserData } from '../hooks/useUserData'; // Make sure the path is correct
+import { auth } from '../services/firebase';
 
 interface UserProfileProps {
     user: User;
     onOpenSettings: () => void;
+    onLogout: () => void;
 }
 
-const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
+const UserProfile = ({ user, onOpenSettings, onLogout }: UserProfileProps) => {
     const { userData, loading } = useUserData(user);
 
     if (!user) return null;
@@ -15,7 +17,7 @@ const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
 
     return (
         <>
-            <div className="flex items-center gap-3 cursor-pointer" onClick={onOpenSettings}>
+            <div className="flex items-center gap-3">
                 <img
                     src={user.photoURL || undefined}
                     alt={user.displayName || 'User Avatar'}
@@ -29,6 +31,7 @@ const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
                         </p>
                     )}
     <button onClick={onOpenSettings} className="text-xs text-blue-500">Upgrade</button>
+    <button onClick={onLogout} className="text-xs text-red-500 ml-2">Logout</button>
                 </div>
             </div>
         </>

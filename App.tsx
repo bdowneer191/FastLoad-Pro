@@ -225,6 +225,14 @@ const App = () => {
 
   const { userData } = useUserData(user);
 
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
@@ -395,7 +403,7 @@ const App = () => {
           </div>
         </header>
         <div className="absolute top-6 right-6 z-50">
-            <UserProfile user={user} onOpenSettings={() => setIsPaywallOpen(true)} />
+    <UserProfile user={user} onOpenSettings={() => setIsPaywallOpen(true)} onLogout={handleLogout} />
         </div>
 
         {isPaywallOpen && <PaywallModal onClose={() => setIsPaywallOpen(false)} />}
