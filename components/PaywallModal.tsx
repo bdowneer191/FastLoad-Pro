@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchProducts, createSubscriptionCheckout } from '../services/stripePayments';
-
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    prices: {
-        id: string;
-        unit_amount: number;
-        currency: string;
-    }[];
-}
+import { Product } from '../types';
 
 interface PaywallModalProps {
     onClose: () => void;
@@ -71,7 +61,7 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                                 )}
                                 <p className="text-sm text-brand-text-secondary mb-6 h-12">{product.description}</p>
                                 <button
-                                    onClick={() => goToCheckout(product.prices[0].id)}
+                                    onClick={() => goToCheckout(product.prices?.[0].id)}
                                     className="mt-auto w-full px-4 py-2 bg-brand-accent-start text-white rounded-lg font-semibold hover:bg-brand-accent-end transition-colors"
                                 >
                                     Choose Plan
