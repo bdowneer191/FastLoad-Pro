@@ -16,11 +16,12 @@ const UserProfile = ({ user, onOpenSettings, onLogout }: UserProfileProps) => {
 
     return (
         <>
-            <div className="flex items-center gap-3">
+<div className="flex items-center gap-3">
                 <img
-                    src={user.photoURL || undefined}
+        src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`}
                     alt={user.displayName || 'User Avatar'}
-                    className="w-10 h-10 rounded-full border-2 border-brand-border"
+        className="w-10 h-10 rounded-full border-2 border-brand-border cursor-pointer"
+        onClick={onOpenSettings}
                 />
                 <div className="text-right">
                     <p className="font-semibold text-sm text-brand-text-primary">{user.displayName}</p>
@@ -29,8 +30,8 @@ const UserProfile = ({ user, onOpenSettings, onLogout }: UserProfileProps) => {
                             {freeTrialsRemaining > 0 ? `${freeTrialsRemaining} free trials left` : 'No free trials'}
                         </p>
                     )}
-    <button onClick={onOpenSettings} className="text-xs text-blue-500">Upgrade</button>
-    <button onClick={onLogout} className="text-xs text-red-500 ml-2">Logout</button>
+        <button onClick={onOpenSettings} className="text-xs text-blue-500">Upgrade</button>
+        <button onClick={onLogout} className="text-xs text-red-500 ml-2">Logout</button>
                 </div>
             </div>
         </>
