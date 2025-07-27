@@ -15,10 +15,18 @@ const payments = getStripePayments(app, {
 });
 
 export const fetchProducts = async () => {
-    const products = await getProducts(payments, {
-        includePrices: true,
-        activeOnly: true,
-    });
+    const products = await getProducts(payments, { activeOnly: true });
+
+    for (const product of products) {
+        const prices = await getProducts(payments, {
+            includePrices: true,
+            where: [
+                ["product", "==", product.id]
+            ]
+        });
+        product.prices = prices;
+    }
+
     return products;
 };
 
