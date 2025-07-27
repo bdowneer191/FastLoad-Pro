@@ -17,17 +17,17 @@ const payments = getStripePayments(app, {
 export const fetchProducts = async () => {
     const products = await getProducts(payments, { activeOnly: true });
 
-    for (const product of products) {
-        const prices = await getProducts(payments, {
-            includePrices: true,
-            where: [
-                ["product", "==", product.id]
-            ]
-        });
-        product.prices = prices;
-    }
+    const productsWithPrices = await Promise.all(
+        products.map(async (product) => {
+            const prices = await getProducts(payments, {
+                includePrices: true,
+                where: [["product", "==", product.id]],
+            });
+            return { ...product, prices };
+        })
+    );
 
-    return products;
+    return productsWithPrices;
 };
 
 export const createSubscriptionCheckout = async (priceId: string) => {
