@@ -8,6 +8,7 @@ import SessionTimer from './components/SessionTimer.tsx';
 import Auth from './components/Auth.tsx';
 import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
+import PaywallModal from './components/PaywallModal.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { useUserData } from './hooks/useUserData.ts';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
@@ -220,8 +221,17 @@ const App = () => {
   
   const [currentSession, ] = useState<{ url: string; startTime: string; } | null>(null);
   const [sessionLog, setSessionLog] = useState<Session[]>([]);
+  const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const { userData } = useUserData(user);
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -393,8 +403,10 @@ const App = () => {
           </div>
         </header>
         <div className="absolute top-6 right-6 z-50">
-            <UserProfile user={user} onOpenSettings={() => {}} />
+            <UserProfile user={user} onOpenSettings={() => setIsPaywallOpen(true)} onLogout={handleLogout} />
         </div>
+
+        {isPaywallOpen && <PaywallModal onClose={() => setIsPaywallOpen(false)} />}
         
         <main className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="flex flex-col gap-6">
