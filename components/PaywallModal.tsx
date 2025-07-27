@@ -1,8 +1,11 @@
-import React from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getApp } from 'firebase/app';
 
-const PaywallModal = () => {
+interface PaywallModalProps {
+    onClose: () => void;
+}
+
+const PaywallModal = ({ onClose }: PaywallModalProps) => {
     const goToCheckout = async (priceId: string) => {
         try {
             const functions = getFunctions(getApp(), 'us-central1');
@@ -29,7 +32,7 @@ const PaywallModal = () => {
             <div className="bg-brand-surface rounded-lg shadow-lg p-8 max-w-2xl w-full">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-brand-text-primary">Upgrade Your Plan</h2>
-                    <button className="text-brand-text-secondary hover:text-white">&times;</button>
+                    <button onClick={onClose} className="text-brand-text-secondary hover:text-white">&times;</button>
                 </div>
 
                 {/* Subscription / Pricing Section */}
