@@ -11,11 +11,11 @@ const firebaseConfig = {
   appId: "1:1051238395821:web:6737342dcc9725ae527b24"
 };
 
-// Validate that all required environment variables are present.
-// This provides a much clearer error message if the root cause is missing env vars.
+// Validate that all required configuration values are present.
+// This provides a much clearer error message if something is missing.
 for (const [key, value] of Object.entries(firebaseConfig)) {
     if (!value) {
-        throw new Error(`Firebase configuration error: Missing environment variable for key: "${key}". Please ensure all VITE_FIREBASE_* variables are set correctly in your environment.`);
+        throw new Error(`Firebase configuration error: Missing configuration value for key: "${key}".`);
     }
 }
 
@@ -23,7 +23,7 @@ for (const [key, value] of Object.entries(firebaseConfig)) {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// Export auth instances
+// Export auth instances and methods
 export const auth = getAuth(app);
 export const githubProvider = new GithubAuthProvider();
 export { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification };
