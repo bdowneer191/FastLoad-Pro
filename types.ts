@@ -74,3 +74,27 @@ export interface Recommendation {
   description: string;
   priority?: 'High' | 'Medium' | 'Low';
 }
+
+export interface Price {
+  id: string;
+  product_id?: string;
+  active?: boolean;
+  description?: string;
+  unit_amount?: number;
+  currency?: string;
+  type?: 'one_time' | 'recurring';
+  interval?: 'day' | 'week' | 'month' | 'year';
+  interval_count?: number;
+  trial_period_days?: number | null;
+  metadata?: { [name: string]: string };
+}
+
+export interface Product {
+  id: string;
+  active?: boolean;
+  name?: string;
+  description?: string;
+  image?: string;
+  metadata?: { [name: string]: string };
+  prices?: Price[];
+}

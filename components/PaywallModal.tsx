@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchProducts, createSubscriptionCheckout } from '../services/stripePayments';
-
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    prices: {
-        id: string;
-        unit_amount: number;
-        currency: string;
-    }[];
-}
+import { Product } from '../types';
 
 interface PaywallModalProps {
     onClose: () => void;
