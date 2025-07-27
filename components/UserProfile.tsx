@@ -28,6 +28,7 @@ const UserProfile = ({ user, onOpenSettings }: UserProfileProps) => {
                             {freeTrialsRemaining > 0 ? `${freeTrialsRemaining} free trials left` : 'No free trials'}
                         </p>
                     )}
+    <button onClick={onOpenSettings} className="text-xs text-blue-500">Upgrade</button>
                 </div>
             </div>
         </>
