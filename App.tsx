@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, ChangeEvent, ReactNode } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
@@ -12,6 +13,8 @@ import PaywallModal from './components/PaywallModal.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { useUserData } from './hooks/useUserData.ts';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
+import SuccessPage from './components/SuccessPage.tsx';
+import CancelPage from './components/CancelPage.tsx';
 
 const initialOptions = {
   stripComments: true,
@@ -196,7 +199,7 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 );
 
 
-const App = () => {
+const MainApp = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [url, setUrl] = useState('');
@@ -643,6 +646,18 @@ const App = () => {
       </div>
     </div>
   );
+};
+
+const App = () => {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<MainApp />} />
+                <Route path="/success" element={<SuccessPage />} />
+                <Route path="/cancel" element={<CancelPage />} />
+            </Routes>
+        </Router>
+    );
 };
 
 export default App;

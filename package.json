@@ -13,12 +13,14 @@
   },
   "dependencies": {
     "@google/genai": "^1.9.0",
+    "@invertase/firestore-stripe-payments": "^0.0.8",
     "@stripe/firestore-stripe-payments": "^0.0.6",
     "@vercel/blob": "^0.23.4",
     "firebase": "^10.12.3",
     "firebase-admin": "^13.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.7.1",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
