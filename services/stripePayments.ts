@@ -5,8 +5,18 @@ import {
     createCheckoutSession,
     onCurrentUserSubscriptionUpdate,
     getCurrentUserSubscriptions,
+    Product as StripeProduct,
+    Price as StripePrice,
 } from "@invertase/firestore-stripe-payments";
 import { auth } from "./firebase";
+
+// --- ✅ FIX 1: Define and export clear interfaces for our app to use ---
+// This ensures the rest of your app knows the exact shape of the data.
+export interface Price extends StripePrice {}
+
+export interface Product extends StripeProduct {
+    prices: Price[];
+}
 
 const app = getApp();
 const payments = getStripePayments(app, {
@@ -14,20 +24,15 @@ const payments = getStripePayments(app, {
     customersCollection: "customers",
 });
 
-export const fetchProducts = async () => {
-    const products = await getProducts(payments, { activeOnly: true });
-
-    const productsWithPrices = await Promise.all(
-        products.map(async (product) => {
-            const prices = await getProducts(payments, {
-                includePrices: true,
-                where: [["product", "==", product.id]],
-            });
-            return { ...product, prices };
-        })
-    );
-
-    return productsWithPrices;
+// --- ✅ FIX 2: Correctly fetch products and their prices in ONE call ---
+// The old code was fetching prices incorrectly, causing the type error.
+export const fetchProducts = async (): Promise<Product[]> => {
+    const products = await getProducts(payments, {
+        includePrices: true, // This flag automatically includes the prices array.
+        activeOnly: true,
+    });
+    // The type assertion is now safe because the data structure is correct.
+    return products as Product[];
 };
 
 export const createSubscriptionCheckout = async (priceId: string) => {
