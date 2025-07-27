@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { fetchProducts, createSubscriptionCheckout } from '../services/stripePayments';
 
+// --- ✅ FIX 1: Made name and description optional to match potential Firestore data ---
 interface Product {
     id: string;
-    name: string;
-    description: string;
+    name?: string;
+    description?: string;
     prices: {
         id: string;
         unit_amount: number;
@@ -57,27 +58,41 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {products.map((product, index) => (
-                            <div
-                                key={product.id}
-                                className={`border rounded-lg p-6 flex flex-col ${index === 1 ? 'border-2 border-brand-accent-start' : 'border-brand-border'}`}
-                            >
-                                <h4 className="text-xl font-bold text-brand-text-primary">{product.name}</h4>
-                                {product.prices?.[0] && (
+                        {products.map((product, index) => {
+                            // --- ✅ FIX 2: Safely get the first price from the prices array ---
+                            const price = product.prices?.[0];
+
+                            // --- ✅ FIX 3: If there's no price, don't render the card at all. This prevents all crashes. ---
+                            if (!price) {
+                                return null;
+                            }
+
+                            return (
+                                <div
+                                    key={product.id}
+                                    className={`border rounded-lg p-6 flex flex-col ${index === 1 ? 'border-2 border-brand-accent-start' : 'border-brand-border'}`}
+                                >
+                                    {/* ✅ FIX 4: Added a fallback for the product name */}
+                                    <h4 className="text-xl font-bold text-brand-text-primary">{product.name ?? 'Subscription Plan'}</h4>
+                                    
                                     <p className="text-3xl font-bold text-brand-text-primary my-4">
-                                        ${(product.prices[0].unit_amount / 100).toFixed(2)}
+                                        ${(price.unit_amount / 100).toFixed(2)}
                                         <span className="text-base font-normal">/mo</span>
                                     </p>
-                                )}
-                                <p className="text-sm text-brand-text-secondary mb-6 h-12">{product.description}</p>
-                                <button
-                                    onClick={() => goToCheckout(product.prices[0].id)}
-                                    className="mt-auto w-full px-4 py-2 bg-brand-accent-start text-white rounded-lg font-semibold hover:bg-brand-accent-end transition-colors"
-                                >
-                                    Choose Plan
-                                </button>
-                            </div>
-                        ))}
+                                    
+                                    {/* ✅ FIX 5: Added a fallback for the product description */}
+                                    <p className="text-sm text-brand-text-secondary mb-6 h-12">{product.description ?? ''}</p>
+                                    
+                                    <button
+                                        // This is now safe because we already confirmed a 'price' object exists
+                                        onClick={() => goToCheckout(price.id)}
+                                        className="mt-auto w-full px-4 py-2 bg-brand-accent-start text-white rounded-lg font-semibold hover:bg-brand-accent-end transition-colors"
+                                    >
+                                        Choose Plan
+                                    </button>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
