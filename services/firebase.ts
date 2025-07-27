@@ -2,20 +2,21 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GithubAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+// ✅ Reads configuration from Vercel's Environment Variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCp9bpLPBW1n6WI6x7n5obQPcKPfZIqQqg",
-  authDomain: "fastloadpro.firebaseapp.com",
-  projectId: "fastloadpro",
-  storageBucket: "fastloadpro.appspot.com",
-  messagingSenderId: "1051238395821",
-  appId: "1:1051238395821:web:6737342dcc9725ae527b24"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Validate that all required configuration values are present.
-// This provides a much clearer error message if something is missing.
+// Validate that all required environment variables are present.
 for (const [key, value] of Object.entries(firebaseConfig)) {
     if (!value) {
-        throw new Error(`Firebase configuration error: Missing configuration value for key: "${key}".`);
+        // This will cause the build to fail if a variable is missing on Vercel
+        throw new Error(`Firebase configuration error: Missing environment variable for key: "${key}". Please check your Vercel project settings.`);
     }
 }
 
@@ -27,3 +28,4 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const githubProvider = new GithubAuthProvider();
 export { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification };
+
