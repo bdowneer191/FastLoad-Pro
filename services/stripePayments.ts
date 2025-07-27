@@ -7,7 +7,6 @@ import {
     getCurrentUserSubscriptions,
 } from "@invertase/firestore-stripe-payments";
 import { auth } from "./firebase";
-import { User } from "firebase/auth";
 
 const app = getApp();
 const payments = getStripePayments(app, {
