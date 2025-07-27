@@ -1,6 +1,5 @@
 import { User } from 'firebase/auth';
 import { useUserData } from '../hooks/useUserData'; // Make sure the path is correct
-import { auth } from '../services/firebase';
 
 interface UserProfileProps {
     user: User;
