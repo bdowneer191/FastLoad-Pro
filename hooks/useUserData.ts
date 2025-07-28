@@ -28,7 +28,7 @@ export const useUserData = (user: User | null) => {
                     setUserData(docSnap.data() as UserData);
                 }
             } catch (error) {
-                console.error("Error fetching user data:", error);
+                console.error("Error fetching user data:", JSON.stringify(error, null, 2));
             } finally {
                 setLoading(false);
             }
