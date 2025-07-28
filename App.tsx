@@ -12,6 +12,7 @@ import UserProfile from './components/UserProfile.tsx';
 import PaywallModal from './components/PaywallModal.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { useUserData } from './hooks/useUserData.ts';
+import { useAuth } from './hooks/useAuth.ts';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
 import SuccessPage from './components/SuccessPage.tsx';
 import CancelPage from './components/CancelPage.tsx';
@@ -227,9 +228,10 @@ const MainApp = () => {
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const { userData } = useUserData(user);
+  const { stripeRole } = useAuth(user);
 
   useEffect(() => {
-    if (userData && userData.freeTrialUsage >= 2) {
+    if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 2) {
       setIsPaywallOpen(true);
     }
   }, [userData]);
@@ -433,7 +435,7 @@ const MainApp = () => {
                 </p>
                 <div className="flex gap-2">
                     <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
-                    <button onClick={handleMeasure} disabled={isMeasuring || !url || (userData.freeTrialUsage || 0) >= 2} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
+                    <button onClick={handleMeasure} disabled={isMeasuring || !url || ((userData.freeTrialUsage || 0) >= 2 && !stripeRole)} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
                       {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
                       {pageSpeedBefore ? 'Compare Speed' : 'Measure Speed'}
                     </button>
