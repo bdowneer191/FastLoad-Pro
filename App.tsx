@@ -228,6 +228,12 @@ const MainApp = () => {
 
   const { userData } = useUserData(user);
 
+  useEffect(() => {
+    if (userData && userData.freeTrialUsage >= 2) {
+      setIsPaywallOpen(true);
+    }
+  }, [userData]);
+
   const handleLogout = async () => {
     try {
       await auth.signOut();
