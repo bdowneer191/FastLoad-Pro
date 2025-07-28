@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-// --- ✅ FIX: Import types directly from the service file for consistency ---
+// Import types and functions from your stripePayments service file
 import {
     fetchProducts,
     createSubscriptionCheckout,
@@ -13,14 +13,20 @@ interface PaywallModalProps {
 const PaywallModal = ({ onClose }: PaywallModalProps) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    // ✅ State to hold a user-facing error message
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadProducts = async () => {
+            // Reset error state on each load attempt
+            setError(null);
             try {
                 const fetchedProducts = await fetchProducts();
-                setProducts(fetchedProducts); // No more type errors here!
-            } catch (error) {
-                console.error("Failed to fetch products:", error);
+                setProducts(fetchedProducts);
+            } catch (err) {
+                // ✅ If fetchProducts fails (e.g., due to the 404 error), set an error message
+                console.error("Failed to fetch products from Firestore:", err);
+                setError("Could not load subscription plans. Please check your connection and try again.");
             } finally {
                 setLoading(false);
             }
@@ -28,13 +34,12 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
         loadProducts();
     }, []);
 
+    // This function remains the same
     const goToCheckout = async (priceId: string) => {
         try {
             await createSubscriptionCheckout(priceId);
-        } catch (error) {
-            console.error("Could not create checkout session:", error);
-            // Use a non-blocking UI element for errors instead of alert()
-            // For now, alert() is kept as per original logic.
+        } catch (checkoutError) {
+            console.error("Could not create checkout session:", checkoutError);
             alert("Error: Could not start the payment process.");
         }
     };
@@ -51,13 +56,15 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent-start"></div>
                     </div>
+                // ✅ If an error occurred during fetch, display it to the user
+                ) : error ? (
+                    <div className="text-center text-red-400 py-10">{error}</div>
+                // Only if loading is false AND there is no error, show the products
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {products.map((product, index) => {
-                            // Safely get the first price from the prices array.
                             const price = product.prices?.[0];
 
-                            // If a product has no price, don't render its card. This prevents crashes.
                             if (!price || !price.unit_amount) {
                                 return null;
                             }
