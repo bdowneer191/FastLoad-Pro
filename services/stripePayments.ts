@@ -28,8 +28,11 @@ const payments = getStripePayments(app, {
 // The old code was fetching prices incorrectly, causing the type error.
 export const fetchProducts = async (): Promise<Product[]> => {
     const products = await getProducts(payments, {
-        includePrices: true, // This flag automatically includes the prices array.
+        includePrices: true,
         activeOnly: true,
+        where: [
+            ['id', 'in', ['prod_Sklzb8Ymix7igA', 'prod_Skm18BmgQ1Knqb']]
+        ]
     });
     // The type assertion is now safe because the data structure is correct.
     return products as Product[];
