@@ -16,7 +16,6 @@ import { useAuth } from './hooks/useAuth.ts';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
 import SuccessPage from './components/SuccessPage.tsx';
 import CancelPage from './components/CancelPage.tsx';
-import TestPage from './components/TestPage.tsx';
 
 const initialOptions = {
   stripComments: true,
@@ -232,10 +231,10 @@ const MainApp = () => {
   const { stripeRole } = useAuth(user);
 
   useEffect(() => {
-    if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 2) {
+    if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 2 && !stripeRole) {
       setIsPaywallOpen(true);
     }
-  }, [userData]);
+  }, [userData, stripeRole]);
 
   const handleLogout = async () => {
     try {
@@ -664,7 +663,6 @@ const App = () => {
                 <Route path="/" element={<MainApp />} />
                 <Route path="/success" element={<SuccessPage />} />
                 <Route path="/cancel" element={<CancelPage />} />
-                <Route path="/test" element={<TestPage />} />
             </Routes>
         </Router>
     );
