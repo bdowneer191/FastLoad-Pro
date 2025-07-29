@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to convert a subscription role name into a numerical level.
+    function getRoleLevel(role) {
+      let roles = {
+        "basic": 1,
+        "pro": 2,
+        "agency": 3
+      };
+      return roles[role];
+    }
+
+    // Gets the numerical role level for the currently signed-in user.
+    function userRoleLevel() {
+      return getRoleLevel(request.auth.token.stripeRole);
+    }
+
+    // Rules for content collections
+    match /content-basic/{doc} {
+      allow read: if userRoleLevel() >= 1;
+    }
+
+    match /content-pro/{doc} {
+      allow read: if userRoleLevel() >= 2;
+    }
+
+    match /content-agency/{doc} {
+      allow read: if userRoleLevel() >= 3;
+    }
+
+    // Rules for Stripe Payments Extension
+    match /customers/{uid} {
+      allow read, write: if request.auth.uid == uid;
+
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+      match /payments/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+    }
+
+    match /products/{id} {
+      allow read: if true;
+
+      match /prices/{id} {
+        allow read: if true;
+      }
+    }
+  }
+}
