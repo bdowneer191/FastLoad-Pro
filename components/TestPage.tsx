@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { app } from '../services/firebase';
+import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { app, auth } from '../services/firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const db = getFirestore(app);
 
 const TestPage = () => {
   const [products, setProducts] = useState<any[]>([]);
+  const [userData, setUserData] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
-    const test = async () => {
+    const getProducts = async () => {
       try {
         const productsCol = collection(db, 'products');
         const productSnapshot = await getDocs(productsCol);
@@ -20,18 +23,40 @@ const TestPage = () => {
       }
     };
 
-    test();
+    getProducts();
   }, []);
+
+  const getUserData = async () => {
+    if (!user) {
+      setError("User not authenticated");
+      return;
+    }
+
+    try {
+      const userDocRef = doc(db, 'customers', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        setUserData(userDocSnap.data());
+      } else {
+        setUserData(null);
+      }
+    } catch (error: any) {
+      setError(JSON.stringify(error, null, 2));
+    }
+  };
 
   return (
     <div>
       <h1>Test Page</h1>
+      <button onClick={getUserData}>Get User Data</button>
       {error && (
         <div>
           <h2>Error</h2>
           <pre>{error}</pre>
         </div>
       )}
+      <h2>User Data</h2>
+      <pre>{JSON.stringify(userData, null, 2)}</pre>
       <h2>Products</h2>
       <pre>{JSON.stringify(products, null, 2)}</pre>
     </div>
