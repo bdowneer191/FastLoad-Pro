@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
-import { app, auth } from '../services/firebase';
+import { app } from '../services/firebase';
+import { getAuth } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
+const auth = getAuth(app);
 const db = getFirestore(app);
 
 const TestPage = () => {
