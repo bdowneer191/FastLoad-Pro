@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, ChangeEvent, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
 import SetupGuide from './components/SetupGuide.tsx';
@@ -12,11 +12,10 @@ import UserProfile from './components/UserProfile.tsx';
 import PaywallModal from './components/PaywallModal.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
 import { useUserData } from './hooks/useUserData.ts';
-import { useAuth } from './hooks/useAuth.ts';
+import { useSubscription } from './contexts/SubscriptionContext.tsx';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
 import SuccessPage from './components/SuccessPage.tsx';
 import CancelPage from './components/CancelPage.tsx';
-import NewTestPage from './components/NewTestPage.tsx';
 
 const initialOptions = {
   stripComments: true,
@@ -203,7 +202,7 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 
 const MainApp = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { stripeRole, loading: authLoading } = useSubscription();
   const [url, setUrl] = useState('');
   
   
@@ -229,7 +228,6 @@ const MainApp = () => {
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const { userData } = useUserData(user);
-  const { stripeRole } = useAuth(user);
 
   useEffect(() => {
     if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 2 && !stripeRole) {
@@ -246,10 +244,7 @@ const MainApp = () => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setAuthLoading(false);
-    });
+    const unsubscribe = auth.onAuthStateChanged(setUser);
     return () => unsubscribe();
   }, []);
   
@@ -664,7 +659,6 @@ const App = () => {
                 <Route path="/" element={<MainApp />} />
                 <Route path="/success" element={<SuccessPage />} />
                 <Route path="/cancel" element={<CancelPage />} />
-                <Route path="/new-test" element={<NewTestPage />} />
             </Routes>
         </Router>
     );
