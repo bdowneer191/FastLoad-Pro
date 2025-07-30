@@ -46,7 +46,7 @@ export const createSubscriptionCheckout = async (priceId: string) => {
         console.log("Created checkout session:", session);
         window.location.assign(session.url);
     } catch (error) {
-        console.error("Error creating checkout session:", error);
+        console.error("Error creating checkout session:", JSON.stringify(error, null, 2));
         alert("Could not create checkout session. Please check the console for more information.");
     }
 };
