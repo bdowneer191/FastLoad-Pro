@@ -30,9 +30,6 @@ export const fetchProducts = async (): Promise<Product[]> => {
     const products = await getProducts(payments, {
         includePrices: true,
         activeOnly: true,
-        where: [
-            ['id', 'in', ['prod_Sklzb8Ymix7igA', 'prod_Skm18BmgQ1Knqb']]
-        ]
     });
     // The type assertion is now safe because the data structure is correct.
     return products as Product[];
