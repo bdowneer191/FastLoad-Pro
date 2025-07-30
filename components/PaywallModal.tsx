@@ -46,7 +46,7 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex justify-center items-center">
-            <div className="bg-brand-surface rounded-lg shadow-lg p-8 max-w-4xl w-full">
+            <div className="bg-brand-surface rounded-lg shadow-lg p-8 max-w-5xl w-full">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-brand-text-primary">Upgrade Your Plan</h2>
                     <button onClick={onClose} className="text-brand-text-secondary hover:text-white text-2xl">&times;</button>
@@ -81,7 +81,7 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                                         <span className="text-base font-normal">/mo</span>
                                     </p>
                                     
-                                    <p className="text-sm text-brand-text-secondary mb-6 h-12">{product.description ?? ''}</p>
+                                    <p className="text-sm text-brand-text-secondary mb-6 flex-grow">{product.description ?? ''}</p>
                                     
                                     <button
                                         onClick={() => goToCheckout(price.id)}
@@ -94,6 +94,13 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
                         })}
                     </div>
                 )}
+
+                <div className="mt-8 text-sm text-brand-text-secondary">
+                    <h3 className="font-bold text-brand-text-primary mb-2">Please Read Before Purchase:</h3>
+                    <p>This unique page speed optimization tool works only for post pages, not your homepage or other site pages.</p>
+                    <p className="mt-2">After purchase, go to your Profile → API Keys section for step-by-step instructions on setting up your Gemini API Key and PageSpeed API Key. This is a one-time setup—after that, you can optimize unlimited posts (within your API limits).</p>
+                    <p className="mt-2">Need help? Email us anytime at <a href="mailto:tsnion@gmail.com" className="text-brand-accent-start hover:underline">tsnion@gmail.com</a>—we're here to assist you.</p>
+                </div>
             </div>
         </div>
     );
