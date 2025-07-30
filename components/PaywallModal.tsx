@@ -21,9 +21,7 @@ const PaywallModal = ({ onClose }: PaywallModalProps) => {
             // Reset error state on each load attempt
             setError(null);
             try {
-                console.log("Fetching products...");
                 const fetchedProducts = await fetchProducts();
-                console.log("Fetched products:", fetchedProducts);
                 setProducts(fetchedProducts);
             } catch (err) {
                 // ✅ If fetchProducts fails (e.g., due to the 404 error), set an error message
