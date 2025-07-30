@@ -11,7 +11,8 @@ import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import PaywallModal from './components/PaywallModal.tsx';
 import { useCleaner } from './hooks/useCleaner.ts';
-import { useUserData } from './hooks/useUserData.ts';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './services/firebase';
 import { useSubscription } from './contexts/SubscriptionContext.tsx';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
 import SuccessPage from './components/SuccessPage.tsx';
@@ -227,7 +228,7 @@ const MainApp = () => {
   const [sessionLog, setSessionLog] = useState<Session[]>([]);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
-  const { userData } = useUserData(user);
+  const [userData, setUserData] = useState<{ freeTrialUsage?: number }>({});
 
   useEffect(() => {
     if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 2 && !stripeRole) {
@@ -251,9 +252,16 @@ const MainApp = () => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchUserData = async () => {
+    const fetchAllUserData = async () => {
         setSessionLoadError('');
         try {
+            // Fetch User Data from Firestore
+            const userDocRef = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                setUserData(docSnap.data());
+            }
+
             // Fetch API Keys
             const keysResponse = await fetch(`/api/user-data?userId=${user.uid}`);
             if (!keysResponse.ok) {
@@ -276,7 +284,7 @@ const MainApp = () => {
         }
     };
 
-    fetchUserData();
+    fetchAllUserData();
   }, [user]);
 
 
@@ -410,7 +418,7 @@ const MainApp = () => {
           </div>
         </header>
         <div className="absolute top-6 right-6 z-50">
-            <UserProfile user={user} onOpenSettings={() => setIsPaywallOpen(true)} onLogout={handleLogout} />
+            <UserProfile user={user} userData={userData} onOpenSettings={() => setIsPaywallOpen(true)} onLogout={handleLogout} />
         </div>
 
         {isPaywallOpen && <PaywallModal onClose={() => setIsPaywallOpen(false)} />}

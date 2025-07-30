@@ -30,6 +30,10 @@ service cloud.firestore {
     }
 
     // Rules for Stripe Payments Extension
+    match /users/{uid} {
+      allow read, write: if request.auth.uid == uid;
+    }
+
     match /customers/{uid} {
       allow read, write: if request.auth.uid == uid;
 
