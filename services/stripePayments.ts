@@ -36,12 +36,19 @@ export const fetchProducts = async (): Promise<Product[]> => {
 };
 
 export const createSubscriptionCheckout = async (priceId: string) => {
-    const session = await createCheckoutSession(payments, {
-        price: priceId,
-        success_url: `${window.location.origin}/success`,
-        cancel_url: `${window.location.origin}/cancel`,
-    });
-    window.location.assign(session.url);
+    try {
+        console.log("Creating checkout session for price:", priceId);
+        const session = await createCheckoutSession(payments, {
+            price: priceId,
+            success_url: `${window.location.origin}/success`,
+            cancel_url: `${window.location.origin}/cancel`,
+        });
+        console.log("Created checkout session:", session);
+        window.location.assign(session.url);
+    } catch (error) {
+        console.error("Error creating checkout session:", error);
+        alert("Could not create checkout session. Please check the console for more information.");
+    }
 };
 
 export const subscribeToSubscriptionUpdates = (
