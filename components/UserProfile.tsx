@@ -1,16 +1,15 @@
 import { User } from 'firebase/auth';
-import { useUserData } from '../hooks/useUserData';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { getSubscriptionPlan, getSubscriptionStatus } from '../utils/subscriptionHelpers';
 
 interface UserProfileProps {
     user: User;
+    userData: { freeTrialUsage?: number };
     onOpenSettings: () => void;
     onLogout: () => void;
 }
 
-const UserProfile = ({ user, onOpenSettings, onLogout }: UserProfileProps) => {
-    const { userData, loading: userDataLoading } = useUserData(user);
+const UserProfile = ({ user, userData, onOpenSettings, onLogout }: UserProfileProps) => {
     const { hasActiveSubscription, subscriptions } = useSubscription();
 
     if (!user) return null;
@@ -62,11 +61,9 @@ const UserProfile = ({ user, onOpenSettings, onLogout }: UserProfileProps) => {
                     </div>
                 ) : (
                     <div>
-                        {!userDataLoading && (
-                            <p className="text-xs text-brand-text-secondary">
-                                {freeTrialsRemaining > 0 ? `${freeTrialsRemaining} free trials left` : 'No free trials'}
-                            </p>
-                        )}
+                        <p className="text-xs text-brand-text-secondary">
+                            {freeTrialsRemaining > 0 ? `${freeTrialsRemaining} free trials left` : 'No free trials'}
+                        </p>
                         <button onClick={onOpenSettings} className="text-xs text-blue-500">Upgrade</button>
                     </div>
                 )}

@@ -418,7 +418,7 @@ const MainApp = () => {
           </div>
         </header>
         <div className="absolute top-6 right-6 z-50">
-            <UserProfile user={user} onOpenSettings={() => setIsPaywallOpen(true)} onLogout={handleLogout} />
+            <UserProfile user={user} userData={userData} onOpenSettings={() => setIsPaywallOpen(true)} onLogout={handleLogout} />
         </div>
 
         {isPaywallOpen && <PaywallModal onClose={() => setIsPaywallOpen(false)} />}
