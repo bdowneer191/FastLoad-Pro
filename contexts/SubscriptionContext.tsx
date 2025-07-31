@@ -5,6 +5,7 @@ import { getUserSubscriptions, subscribeToSubscriptionUpdates } from '../service
 import { canAccessPremiumFeatures } from '../utils/subscriptionHelpers';
 
 interface SubscriptionContextType {
+  user: User | null;
   subscriptions: any[];
   hasActiveSubscription: boolean;
   stripeRole: string | null;
@@ -82,6 +83,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const value = {
+    user,
     subscriptions,
     hasActiveSubscription,
     stripeRole,

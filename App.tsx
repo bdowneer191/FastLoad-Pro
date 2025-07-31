@@ -202,8 +202,7 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 
 
 const MainApp = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const { stripeRole, loading: authLoading } = useSubscription();
+  const { user, stripeRole, loading: authLoading } = useSubscription();
   const [url, setUrl] = useState('');
   
   
@@ -244,10 +243,6 @@ const MainApp = () => {
     }
   };
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
-    return () => unsubscribe();
-  }, []);
   
   useEffect(() => {
     if (!user) return;
