@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, ChangeEvent, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { User } from 'firebase/auth';
 import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
 import SetupGuide from './components/SetupGuide.tsx';
