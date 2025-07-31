@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, ChangeEvent, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { User } from 'firebase/auth';
 import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
 import SetupGuide from './components/SetupGuide.tsx';
@@ -202,8 +201,7 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 
 
 const MainApp = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const { stripeRole, loading: authLoading } = useSubscription();
+  const { user, stripeRole, loading: authLoading } = useSubscription();
   const [url, setUrl] = useState('');
   
   
@@ -244,10 +242,6 @@ const MainApp = () => {
     }
   };
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
-    return () => unsubscribe();
-  }, []);
   
   useEffect(() => {
     if (!user) return;
