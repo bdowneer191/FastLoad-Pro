@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sendEmailVerification, User } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
@@ -8,6 +8,20 @@ interface VerifyEmailProps {
 
 const VerifyEmail = ({ user }: VerifyEmailProps) => {
     const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            if (auth.currentUser) {
+                await auth.currentUser.reload();
+                if (auth.currentUser.emailVerified) {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }
+        }, 3000); // Check every 3 seconds
+
+        return () => clearInterval(interval);
+    }, []);
 
     const handleResendVerification = async () => {
         setMessage('');
@@ -29,6 +43,9 @@ const VerifyEmail = ({ user }: VerifyEmailProps) => {
                 </h1>
                 <p className="text-lg text-brand-text-secondary mb-8">
                     A verification email has been sent to {user.email}. Please check your inbox and click the link to verify your account.
+                </p>
+                <p className="text-sm text-brand-text-secondary mb-8">
+                    Waiting for verification... This page will automatically reload once you're verified.
                 </p>
 
                 {message && <p className="mb-4 text-sm text-brand-danger">{message}</p>}
