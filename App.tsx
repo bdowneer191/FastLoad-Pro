@@ -228,7 +228,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const { isCleaning, cleanHtml } = useCleaner();
   const [aiAppliedNotification, setAiAppliedNotification] = useState('');
 
-  const [currentSession, ] = useState<{ url: string; startTime: string; } | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const [userData, setUserData] = useState<{ freeTrialUsage?: number }>({});
@@ -288,12 +288,31 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
 
 
+  useEffect(() => {
+    if (pageSpeedAfter && sessionStartTime) {
+      const sessionEndTime = Date.now();
+      const duration = sessionEndTime - sessionStartTime;
+      console.log(`Session duration: ${duration}ms`);
+      const newSession: Session = {
+        id: new Date().toISOString(),
+        url,
+        startTime: new Date(sessionStartTime).toISOString(),
+        endTime: new Date(sessionEndTime).toISOString(),
+        duration,
+        report: pageSpeedAfter,
+      };
+      setSessionLog(prevSessions => [newSession, ...prevSessions]);
+      setSessionStartTime(null);
+    }
+  }, [pageSpeedAfter, sessionStartTime, setSessionLog, url]);
+
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
 
     setIsMeasuring(true);
     setApiError('');
     setSessionLoadError('');
+    setSessionStartTime(Date.now());
 
     try {
       const idToken = await user?.getIdToken();
@@ -432,7 +451,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
               {sessionLoadError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{sessionLoadError}</p>}
             </div>
             <Step number={1} title="Measure Your Page Speed">
-                {currentSession && <SessionTimer startTime={currentSession.startTime} />}
+                {sessionStartTime && <SessionTimer startTime={new Date(sessionStartTime).toISOString()} />}
                 <p className="text-sm text-brand-text-secondary mb-3">
                   You have {2 - (userData.freeTrialUsage || 0)} free trials remaining.
                 </p>

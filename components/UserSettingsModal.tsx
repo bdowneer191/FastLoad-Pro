@@ -1,6 +1,7 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useState, useEffect } from 'react';
 import { User, updateProfile, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface UserSettingsModalProps {
     user: User;
@@ -9,6 +10,51 @@ interface UserSettingsModalProps {
 }
 
 const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) => {
+    const [timezones, setTimezones] = useState<string[]>([]);
+    const [selectedTimezone, setSelectedTimezone] = useState('');
+
+    useEffect(() => {
+        const fetchTimezones = async () => {
+            try {
+                const response = await fetch('http://worldtimeapi.org/api/timezone');
+                const data = await response.json();
+                setTimezones(data);
+            } catch (error) {
+                console.error('Failed to fetch timezones:', error);
+                // Fallback to a basic list if the API fails
+                setTimezones(["UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Paris", "Asia/Tokyo"]);
+            }
+        };
+
+        const fetchUserTimezone = async () => {
+            const userDocRef = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists() && docSnap.data().timezone) {
+                setSelectedTimezone(docSnap.data().timezone);
+            }
+        };
+
+        if (isOpen) {
+            fetchTimezones();
+            fetchUserTimezone();
+        }
+    }, [isOpen, user.uid]);
+
+    const handleSave = async () => {
+        const displayNameInput = document.getElementById('displayName') as HTMLInputElement;
+        const newDisplayName = displayNameInput.value;
+
+        if (newDisplayName && newDisplayName !== user.displayName) {
+            await updateProfile(user, { displayName: newDisplayName });
+        }
+
+        if (selectedTimezone) {
+            const userDocRef = doc(db, 'users', user.uid);
+            await setDoc(userDocRef, { timezone: selectedTimezone }, { merge: true });
+        }
+        onClose();
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -73,22 +119,6 @@ const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) =>
                         />
                     </div>
                     <div className="mt-4">
-                        <button
-                            className="px-4 py-2 bg-brand-accent-start text-white rounded-lg cursor-pointer hover:bg-brand-accent-end transition-colors"
-                            onClick={async () => {
-                                const displayNameInput = document.getElementById('displayName') as HTMLInputElement;
-                                const newDisplayName = displayNameInput.value;
-
-                                if (newDisplayName && newDisplayName !== user.displayName) {
-                                    await updateProfile(user, { displayName: newDisplayName });
-                                    // You might want to show a success message here
-                                }
-                            }}
-                        >
-                            Save Changes
-                        </button>
-                    </div>
-                    <div className="mt-4">
                         <label htmlFor="email" className="block text-sm font-medium text-brand-text-secondary mb-1">
                             Email Address
                         </label>
@@ -129,12 +159,38 @@ const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) =>
                     </div>
                 </div>
 
-                <div className="mt-6">
+                {/* Timezone Settings Section */}
+                <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Timezone</h3>
+                    <div className="mt-4">
+                        <label htmlFor="timezone" className="block text-sm font-medium text-brand-text-secondary mb-1">
+                            Select your timezone
+                        </label>
+                        <select
+                            id="timezone"
+                            value={selectedTimezone}
+                            onChange={(e) => setSelectedTimezone(e.target.value)}
+                            className="w-full p-2 bg-brand-background border border-brand-border rounded-lg"
+                        >
+                            {timezones.map(tz => (
+                                <option key={tz} value={tz}>{tz}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center mt-8">
                     <button
                         onClick={() => signOut(auth)}
                         className="text-xs text-brand-text-secondary hover:text-brand-accent-start transition-colors"
                     >
                         Sign Out
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="px-6 py-2 bg-brand-accent-start text-white rounded-lg cursor-pointer hover:bg-brand-accent-end transition-colors"
+                    >
+                        Save All Changes
                     </button>
                 </div>
             </div>

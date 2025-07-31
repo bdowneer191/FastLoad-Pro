@@ -1,6 +1,7 @@
 import { User } from 'firebase/auth';
-import { useSubscription } from '../contexts/SubscriptionContext';
-import { getSubscriptionPlan, getSubscriptionStatus } from '../utils/subscriptionHelpers';
+import { useState } from 'react';
+import Icon from './Icon';
+import UserSettingsModal from './UserSettingsModal';
 
 interface UserProfileProps {
     user: User;
@@ -9,67 +10,26 @@ interface UserProfileProps {
     onLogout: () => void;
 }
 
-const UserProfile = ({ user, userData, onOpenSettings, onLogout }: UserProfileProps) => {
-    const { hasActiveSubscription, subscriptions } = useSubscription();
-
-    if (!user) return null;
-
-    const freeTrialsRemaining = 2 - (userData?.freeTrialUsage || 0);
-    const activeSubscription = subscriptions.find(sub => getSubscriptionStatus(sub) === 'active');
-
-    const handleManageSubscription = async () => {
-        if (!user) return;
-        try {
-            const idToken = await user.getIdToken();
-            const response = await fetch('/api/create-portal-link', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ return_url: window.location.href }),
-            });
-            if (!response.ok) {
-                throw new Error('Failed to create Stripe portal link.');
-            }
-            const { url } = await response.json();
-            window.location.assign(url);
-        } catch (error) {
-            console.error('Error redirecting to Stripe portal:', error);
-            alert('Could not redirect to subscription management.');
-        }
-    };
+const UserProfile = ({ user, onLogout }: UserProfileProps) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
     return (
-        <div className="flex items-center gap-3">
-            <img
-                src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`}
-                alt={user.displayName || 'User Avatar'}
-                className="w-10 h-10 rounded-full border-2 border-brand-border cursor-pointer"
-                onClick={onOpenSettings}
-            />
-            <div className="text-right">
-                <p className="font-semibold text-sm text-brand-text-primary">{user.displayName}</p>
-                {hasActiveSubscription && activeSubscription ? (
-                    <div>
-                        <p className="text-xs text-brand-text-secondary">
-                            {getSubscriptionPlan(activeSubscription)} ({getSubscriptionStatus(activeSubscription)})
-                        </p>
-                        <p className="text-xs text-brand-text-secondary">
-                            Next payment: {new Date(activeSubscription.current_period_end * 1000).toLocaleDateString()}
-                        </p>
-                        <button onClick={handleManageSubscription} className="text-xs text-blue-500">Manage</button>
-                    </div>
-                ) : (
-                    <div>
-                        <p className="text-xs text-brand-text-secondary">
-                            {freeTrialsRemaining > 0 ? `${freeTrialsRemaining} free trials left` : 'No free trials'}
-                        </p>
-                        <button onClick={onOpenSettings} className="text-xs text-blue-500">Upgrade</button>
+        <>
+            <div className="relative">
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-2 rounded-full hover:bg-brand-surface transition-colors">
+                    <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || user.email}&background=random`} alt="User" className="w-8 h-8 rounded-full" />
+                    <Icon name="chevron-down" className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-brand-surface rounded-lg shadow-lg py-1 z-50">
+                        <button onClick={() => { setIsSettingsModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-brand-text-primary hover:bg-brand-background">Settings</button>
+                        <button onClick={onLogout} className="w-full text-left px-4 py-2 text-sm text-brand-text-primary hover:bg-brand-background">Logout</button>
                     </div>
                 )}
-                <button onClick={onLogout} className="text-xs text-red-500 ml-2">Logout</button>
             </div>
-        </div>
+            <UserSettingsModal user={user} isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+        </>
     );
 };
 
