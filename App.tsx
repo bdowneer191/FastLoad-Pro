@@ -16,6 +16,7 @@ import { useSubscription } from './contexts/SubscriptionContext.tsx';
 import { Recommendation, Session, ImpactSummary, PageSpeedReport } from './types.ts';
 import SuccessPage from './components/SuccessPage.tsx';
 import CancelPage from './components/CancelPage.tsx';
+import DetailedLogPage from './components/DetailedLogPage.tsx';
 
 const initialOptions = {
   stripComments: true,
@@ -661,6 +662,7 @@ const App = () => {
                 <Route path="/" element={<MainApp />} />
                 <Route path="/success" element={<SuccessPage />} />
                 <Route path="/cancel" element={<CancelPage />} />
+                <Route path="/logs" element={<DetailedLogPage sessions={sessionLog} />} />
             </Routes>
         </Router>
     );

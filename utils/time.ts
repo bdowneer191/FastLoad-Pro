@@ -40,3 +40,10 @@ export const isWithinLast24Hours = (date: Date): boolean => {
     const diff = now.getTime() - date.getTime();
     return diff >= 0 && diff <= twentyFourHoursInMillis;
 };
+
+export const isToday = (date: Date): boolean => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+};

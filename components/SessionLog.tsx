@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
-import { getDhakaDate, formatDuration, isWithinLast24Hours } from '../utils/time';
+import { getDhakaDate, formatDuration, isToday } from '../utils/time';
 import { Session } from '../types';
 
 interface SessionLogProps {
@@ -51,15 +52,16 @@ const convertToCSV = (sessions: Session[]): string => {
 };
 
 const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(true);
     const [isClearing, setIsClearing] = useState(false);
     const [showAll, setShowAll] = useState(false);
 
-    const last24HourSessions = useMemo(() => {
-        return sessions.filter(s => isWithinLast24Hours(new Date(s.startTime)));
+    const todaySessions = useMemo(() => {
+        return sessions.filter(s => isToday(new Date(s.startTime)));
     }, [sessions]);
 
-    const displayedSessions = showAll ? sessions : last24HourSessions;
+    const displayedSessions = showAll ? sessions : todaySessions;
 
     const handleDownload = () => {
         const csv = convertToCSV(sessions);
@@ -114,16 +116,16 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                             <div>
                                 <h4 className="font-semibold text-brand-text-primary">Your Session Log</h4>
                                 <p className="text-xs text-brand-text-secondary mt-1">
-                                    {showAll ? `Showing all ${sessions.length} sessions.` : `Showing ${last24HourSessions.length} of ${sessions.length} total sessions from the last 24 hours.`}
+                                    {showAll ? `Showing all ${sessions.length} sessions.` : `Showing ${todaySessions.length} of ${sessions.length} total sessions from today.`}
                                 </p>
                             </div>
                            <div className="flex gap-2 flex-wrap">
-                             {sessions.length > last24HourSessions.length && (
+                             {sessions.length > todaySessions.length && (
                                 <button
                                     onClick={() => setShowAll(!showAll)}
                                     className="text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors"
                                 >
-                                    {showAll ? 'Show Last 24 Hours' : `Show All History (${sessions.length})`}
+                                    {showAll ? 'Show Today' : `Show All History (${sessions.length})`}
                                 </button>
                              )}
                               <button onClick={handleDownload} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
@@ -131,6 +133,9 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                               </button>
                               <button onClick={handleClear} disabled={isClearing} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-danger/20 border border-brand-danger/50 text-brand-danger hover:bg-brand-danger/40 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 {isClearing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Icon name="trash" className="w-4 h-4" />} Clear History
+                              </button>
+                              <button onClick={() => navigate('/logs')} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
+                                <Icon name="externalLink" className="w-4 h-4" /> View Detailed Log
                               </button>
                            </div>
                        </div>
