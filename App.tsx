@@ -300,6 +300,15 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         endTime: new Date(sessionEndTime).toISOString(),
         duration,
         report: pageSpeedAfter,
+        beforeScores: {
+          mobile: pageSpeedBefore?.mobile.lighthouseResult.categories.performance.score || 0,
+          desktop: pageSpeedBefore?.desktop.lighthouseResult.categories.performance.score || 0,
+        },
+        afterScores: {
+          mobile: pageSpeedAfter.mobile.lighthouseResult.categories.performance.score,
+          desktop: pageSpeedAfter.desktop.lighthouseResult.categories.performance.score,
+        },
+        userId: user!.uid,
       };
       setSessionLog(prevSessions => [newSession, ...prevSessions]);
       setSessionStartTime(null);
