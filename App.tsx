@@ -201,11 +201,16 @@ const CheckboxOption = ({ name, checked, onChange, label, description, isRecomme
 );
 
 
-const MainApp = () => {
+interface MainAppProps {
+    sessionLog: Session[];
+    setSessionLog: React.Dispatch<React.SetStateAction<Session[]>>;
+}
+
+const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const { user, stripeRole, loading: authLoading } = useSubscription();
   const [url, setUrl] = useState('');
-  
-  
+
+
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [pageSpeedBefore, setPageSpeedBefore] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
   const [pageSpeedAfter, ] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
@@ -222,9 +227,8 @@ const MainApp = () => {
   const [copied, setCopied] = useState(false);
   const { isCleaning, cleanHtml } = useCleaner();
   const [aiAppliedNotification, setAiAppliedNotification] = useState('');
-  
+
   const [currentSession, ] = useState<{ url: string; startTime: string; } | null>(null);
-  const [sessionLog, setSessionLog] = useState<Session[]>([]);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const [userData, setUserData] = useState<{ freeTrialUsage?: number }>({});
@@ -243,7 +247,7 @@ const MainApp = () => {
     }
   };
 
-  
+
   useEffect(() => {
     if (!user) return;
 
@@ -280,7 +284,7 @@ const MainApp = () => {
     };
 
     fetchAllUserData();
-  }, [user]);
+  }, [user, setSessionLog]);
 
 
 
@@ -656,10 +660,12 @@ const MainApp = () => {
 };
 
 const App = () => {
+    const [sessionLog, setSessionLog] = useState<Session[]>([]);
+
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<MainApp />} />
+                <Route path="/" element={<MainApp sessionLog={sessionLog} setSessionLog={setSessionLog} />} />
                 <Route path="/success" element={<SuccessPage />} />
                 <Route path="/cancel" element={<CancelPage />} />
                 <Route path="/logs" element={<DetailedLogPage sessions={sessionLog} />} />

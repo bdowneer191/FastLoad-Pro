@@ -7,6 +7,18 @@ interface DetailedLogPageProps {
   sessions: Session[];
 }
 
+const ScoreDiff = ({ before, after }: { before: number, after: number }) => {
+    if (before === undefined || after === undefined) return null;
+    const diff = Math.round(after * 100) - Math.round(before * 100);
+    const color = diff > 0 ? 'text-brand-success' : diff < 0 ? 'text-brand-danger' : 'text-brand-text-secondary';
+    const sign = diff > 0 ? '+' : '';
+    return (
+        <span>
+            {Math.round(before * 100)} &rarr; {Math.round(after * 100)} <span className={`font-bold ${color}`}>({sign}{diff})</span>
+        </span>
+    );
+}
+
 const convertToCSV = (sessions: Session[]): string => {
     if (sessions.length === 0) return '';
 
@@ -101,8 +113,8 @@ const DetailedLogPage: React.FC<DetailedLogPageProps> = ({ sessions }) => {
                 <td className="py-3 pr-2">{getDhakaDate(new Date(session.startTime))}</td>
                 <td className="py-3 px-2 truncate max-w-xs text-brand-accent-start" title={session.url}>{session.url}</td>
                 <td className="py-3 px-2 font-mono">{formatDuration(session.duration)}</td>
-                <td className="py-3 pl-2">{session.beforeScores.mobile.toFixed(2)} -> {session.afterScores.mobile.toFixed(2)}</td>
-                <td className="py-3 pl-2">{session.beforeScores.desktop.toFixed(2)} -> {session.afterScores.desktop.toFixed(2)}</td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.mobile} after={session.afterScores.mobile} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.desktop} after={session.afterScores.desktop} /></td>
               </tr>
             ))}
           </tbody>

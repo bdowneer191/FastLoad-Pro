@@ -135,7 +135,7 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                                 {isClearing ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Icon name="trash" className="w-4 h-4" />} Clear History
                               </button>
                               <button onClick={() => navigate('/logs')} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
-                                <Icon name="externalLink" className="w-4 h-4" /> View Detailed Log
+                                <Icon name="sheet" className="w-4 h-4" /> View Detailed Log
                               </button>
                            </div>
                        </div>
