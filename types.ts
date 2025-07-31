@@ -26,6 +26,7 @@ export interface Session {
   startTime: string;
   endTime: string;
   duration: number;
+  report: { mobile: PageSpeedReport, desktop: PageSpeedReport };
   beforeScores: { mobile: number, desktop: number };
   afterScores: { mobile: number, desktop: number };
   userId: string;

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getDhakaTime, formatDuration } from '../utils/time.ts';
+import Clock from 'react-clock';
+import 'react-clock/dist/Clock.css';
+import { formatDuration } from '../utils/time.ts';
 
 interface SessionTimerProps {
   startTime: string;
@@ -7,7 +9,7 @@ interface SessionTimerProps {
 
 const SessionTimer: React.FC<SessionTimerProps> = ({ startTime }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [currentTimeInDhaka, setCurrentTimeInDhaka] = useState('');
+  const [value, setValue] = useState(new Date());
 
   useEffect(() => {
     const sessionStartDate = new Date(startTime);
@@ -15,23 +17,22 @@ const SessionTimer: React.FC<SessionTimerProps> = ({ startTime }) => {
     const timerInterval = setInterval(() => {
       const now = new Date();
       setElapsedSeconds((now.getTime() - sessionStartDate.getTime()) / 1000);
-      setCurrentTimeInDhaka(getDhakaTime(now));
+      setValue(now);
     }, 1000);
 
     return () => clearInterval(timerInterval);
   }, [startTime]);
 
   return (
-    <div className="p-3 mb-4 bg-green-900/50 border border-green-700 rounded-lg text-center">
-        <h3 className="font-semibold text-green-300">Active Session</h3>
-        <div className="flex justify-center items-center gap-6 mt-1 text-sm text-gray-300">
-            <div>
-                <span className="text-xs text-gray-400 block">Session Timer</span>
-                <span className="font-mono text-lg">{formatDuration(elapsedSeconds)}</span>
+    <div className="p-3 mb-4 bg-brand-surface rounded-lg text-center shadow-lg" style={{ perspective: '1000px' }}>
+        <h3 className="font-semibold text-brand-accent-start">Active Session</h3>
+        <div className="flex justify-center items-center gap-6 mt-1 text-sm text-brand-text-secondary">
+            <div style={{ transform: 'rotateY(-10deg) rotateX(10deg)', transformStyle: 'preserve-3d' }}>
+                <Clock value={value} size={100} renderNumbers={true} />
             </div>
-             <div>
-                <span className="text-xs text-gray-400 block">Current Time (Dhaka)</span>
-                <span className="font-mono text-lg">{currentTimeInDhaka}</span>
+            <div>
+                <span className="text-xs text-brand-text-secondary block">Session Timer</span>
+                <span className="font-mono text-lg">{formatDuration(elapsedSeconds)}</span>
             </div>
         </div>
     </div>
