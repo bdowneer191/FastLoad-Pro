@@ -526,7 +526,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                     </button>
                     {pageSpeedBefore && (
                       <button onClick={handleCompare} disabled={isMeasuring || isComparing || !cleanedHtml} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
-                        {isComparing ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="sparkles" className="w-5 h-5" />}
+                        {isComparing ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
                         {isComparing ? 'Comparing...' : 'Compare'}
                       </button>
                     )}
