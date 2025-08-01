@@ -367,7 +367,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
     try {
         const idToken = await user.getIdToken();
-        const response = await fetch('/api/free-measure', {
+        const response = await fetch('/api/fetch-report', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${idToken}`,
