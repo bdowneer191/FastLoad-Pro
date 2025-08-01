@@ -13,8 +13,6 @@ const SessionTimer: React.FC<SessionTimerProps> = ({ startTime }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [value, setValue] = useState(new Date());
   const [timezone, setTimezone] = useState('UTC');
-  const [loadingTimezone, setLoadingTimezone] = useState(true);
-
   useEffect(() => {
     const fetchUserTimezone = async () => {
       if (auth.currentUser) {
@@ -24,7 +22,6 @@ const SessionTimer: React.FC<SessionTimerProps> = ({ startTime }) => {
           setTimezone(docSnap.data().timezone);
         }
       }
-      setLoadingTimezone(false);
     };
 
     fetchUserTimezone();

@@ -216,7 +216,6 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const [pageSpeedAfter, setPageSpeedAfter] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
   const [optimizationPlan, setOptimizationPlan] = useState<Recommendation[] | null>(null);
   const [isGeneratingPlan, ] = useState(false);
-  const [comparisonAnalysis, ] = useState<any>(null);
   const [apiError, setApiError] = useState('');
   const [sessionLoadError, setSessionLoadError] = useState('');
 
