@@ -219,6 +219,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const [isGeneratingPlan, ] = useState(false);
   const [apiError, setApiError] = useState('');
   const [sessionLoadError, setSessionLoadError] = useState('');
+  const [sessionNotification, setSessionNotification] = useState<string | null>(null);
 
   const [originalHtml, setOriginalHtml] = useState('');
   const [cleanedHtml, setCleanedHtml] = useState('');
@@ -275,8 +276,11 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                 const errorData = await sessionsResponse.json().catch(() => ({ message: 'Failed to fetch session data.' }));
                 throw new Error(errorData.message);
             }
-            const sessionsData = await sessionsResponse.json();
-            setSessionLog(sessionsData);
+            const { sessions, notification } = await sessionsResponse.json();
+            setSessionLog(sessions);
+            if (notification) {
+                setSessionNotification(notification);
+            }
         } catch (error: any) {
             console.error("Failed to load user data:", error);
             setSessionLoadError(`Could not load history or keys: ${error.message}`);
@@ -510,6 +514,11 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
               <SetupGuide />
             </div>
             <div className="mb-2">
+              {sessionNotification && (
+                <div className="mb-4 p-3 bg-brand-warning/10 border border-brand-warning/30 rounded-lg text-sm text-brand-warning">
+                  {sessionNotification}
+                </div>
+              )}
               <SessionLog sessions={sessionLog} setSessions={setSessionLog} userId={user.uid} />
               {sessionLoadError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{sessionLoadError}</p>}
             </div>
