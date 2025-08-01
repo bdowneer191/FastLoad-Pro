@@ -213,7 +213,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [pageSpeedBefore, setPageSpeedBefore] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
-  const [pageSpeedAfter, ] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
+  const [pageSpeedAfter, setPageSpeedAfter] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
   const [optimizationPlan, setOptimizationPlan] = useState<Recommendation[] | null>(null);
   const [isGeneratingPlan, ] = useState(false);
   const [comparisonAnalysis, ] = useState<any>(null);
@@ -234,7 +234,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const [userData, setUserData] = useState<{ freeTrialUsage?: number }>({});
 
   useEffect(() => {
-    if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 2 && !stripeRole) {
+    if (userData && userData.freeTrialUsage !== undefined && userData.freeTrialUsage >= 200 && !stripeRole) {
       setIsPaywallOpen(true);
     }
   }, [userData, stripeRole]);
@@ -382,7 +382,12 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         setAiAppliedNotification('AI recommendations have been automatically applied!');
         setTimeout(() => setAiAppliedNotification(''), 4000);
     }
-  }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan]);
+
+    // Mocking the second pagespeed report for comparison
+    if (pageSpeedBefore) {
+      setPageSpeedAfter(pageSpeedBefore);
+    }
+  }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan, pageSpeedBefore]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(cleanedHtml);
@@ -462,7 +467,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
             <Step number={1} title="Measure Your Page Speed">
                 {sessionStartTime && <SessionTimer startTime={new Date(sessionStartTime).toISOString()} />}
                 <p className="text-sm text-brand-text-secondary mb-3">
-                  You have {2 - (userData.freeTrialUsage || 0)} free trials remaining.
+                  You have {200 - (userData.freeTrialUsage || 0)} free trials remaining.
                 </p>
                 <div className="flex gap-2">
                     <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>

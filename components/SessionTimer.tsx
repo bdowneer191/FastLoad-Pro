@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Clock from 'react-clock';
-import 'react-clock/dist/Clock.css';
 import { formatDuration } from '../utils/time.ts';
 
 interface SessionTimerProps {
@@ -9,7 +7,7 @@ interface SessionTimerProps {
 
 const SessionTimer: React.FC<SessionTimerProps> = ({ startTime }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [value, setValue] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const sessionStartDate = new Date(startTime);
@@ -17,18 +15,19 @@ const SessionTimer: React.FC<SessionTimerProps> = ({ startTime }) => {
     const timerInterval = setInterval(() => {
       const now = new Date();
       setElapsedSeconds((now.getTime() - sessionStartDate.getTime()) / 1000);
-      setValue(now);
+      setCurrentTime(now);
     }, 1000);
 
     return () => clearInterval(timerInterval);
   }, [startTime]);
 
   return (
-    <div className="p-3 mb-4 bg-brand-surface rounded-lg text-center shadow-lg" style={{ perspective: '1000px' }}>
+    <div className="p-3 mb-4 bg-brand-surface rounded-lg text-center shadow-lg">
         <h3 className="font-semibold text-brand-accent-start">Active Session</h3>
         <div className="flex justify-center items-center gap-6 mt-1 text-sm text-brand-text-secondary">
-            <div style={{ transform: 'rotateY(-10deg) rotateX(10deg)', transformStyle: 'preserve-3d' }}>
-                <Clock value={value} size={100} renderNumbers={true} />
+            <div>
+                <span className="text-xs text-brand-text-secondary block">Current Time</span>
+                <span className="font-mono text-lg">{currentTime.toLocaleTimeString()}</span>
             </div>
             <div>
                 <span className="text-xs text-brand-text-secondary block">Session Timer</span>
