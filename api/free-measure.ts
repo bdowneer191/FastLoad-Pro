@@ -83,7 +83,7 @@ export async function POST(request: Request): Promise<Response> {
     const freeTrialUsage = userData?.freeTrialUsage || 0;
     console.log(`User free trial usage: ${freeTrialUsage}`);
 
-    if (freeTrialUsage >= 2) {
+    if (freeTrialUsage >= 200) {
       return new Response(JSON.stringify({ error: 'Free trial limit exceeded.' }), {
         status: 403, headers: { 'Content-Type': 'application/json' }
       });
