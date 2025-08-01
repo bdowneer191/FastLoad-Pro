@@ -356,13 +356,15 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         setAiAppliedNotification('AI recommendations have been automatically applied!');
         setTimeout(() => setAiAppliedNotification(''), 4000);
     }
+  }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan]);
+
+  const handleCompare = useCallback(async () => {
+    if (!pageSpeedBefore) return;
 
     // Mocking the second pagespeed report for comparison
-    if (pageSpeedBefore) {
-      setPageSpeedAfter(pageSpeedBefore);
-    }
+    setPageSpeedAfter(pageSpeedBefore);
 
-    if (pageSpeedBefore && pageSpeedAfter && sessionStartTime) {
+    if (pageSpeedBefore && sessionStartTime) {
       const sessionEndTime = Date.now();
       const duration = sessionEndTime - sessionStartTime;
       const newSession: Session = {
@@ -371,14 +373,14 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         startTime: new Date(sessionStartTime).toISOString(),
         endTime: new Date(sessionEndTime).toISOString(),
         duration,
-        report: pageSpeedAfter,
+        report: pageSpeedBefore, // Using before for after as it's mocked
         beforeScores: {
           mobile: pageSpeedBefore?.mobile.lighthouseResult.categories.performance.score || 0,
           desktop: pageSpeedBefore?.desktop.lighthouseResult.categories.performance.score || 0,
         },
         afterScores: {
-          mobile: pageSpeedAfter.mobile.lighthouseResult.categories.performance.score,
-          desktop: pageSpeedAfter.desktop.lighthouseResult.categories.performance.score,
+          mobile: pageSpeedBefore.mobile.lighthouseResult.categories.performance.score,
+          desktop: pageSpeedBefore.desktop.lighthouseResult.categories.performance.score,
         },
         userId: user!.uid,
       };
@@ -391,7 +393,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         finalRecommendations: [{title: "Mock recommendation", description: "Mock description"}],
       });
     }
-  }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan, pageSpeedBefore, pageSpeedAfter, sessionStartTime, setSessionLog, url, user]);
+  }, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(cleanedHtml);
@@ -477,8 +479,14 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                     <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
                     <button onClick={handleMeasure} disabled={isMeasuring || !url || ((userData.freeTrialUsage || 0) >= 200 && !stripeRole)} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
                       {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
-                      {pageSpeedBefore ? 'Compare Speed' : 'Measure Speed'}
+                      {'Measure Speed'}
                     </button>
+                    {pageSpeedBefore && (
+                      <button onClick={handleCompare} disabled={isMeasuring || !cleanedHtml} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
+                        {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="sparkles" className="w-5 h-5" />}
+                        {'Compare'}
+                      </button>
+                    )}
                 </div>
                 {apiError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{apiError}</p>}
                 {isMeasuring && <p className="text-sm text-center text-brand-text-secondary mt-4 animate-subtle-pulse">Measuring page speed... this can take up to a minute.</p>}
