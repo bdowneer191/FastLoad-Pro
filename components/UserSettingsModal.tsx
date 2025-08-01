@@ -21,8 +21,11 @@ const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) =>
                 setTimezones(data);
             } catch (error) {
                 console.error('Failed to fetch timezones:', error);
-                // Fallback to a basic list if the API fails
-                setTimezones(["UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Europe/Paris", "Asia/Tokyo"]);
+                // Fallback to a more comprehensive list if the API fails
+                setTimezones([
+                    "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+                    "Europe/London", "Europe/Paris", "Asia/Tokyo", "Asia/Dhaka", "Australia/Sydney"
+                ]);
             }
         };
 
