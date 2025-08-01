@@ -212,6 +212,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
 
   const [isMeasuring, setIsMeasuring] = useState(false);
+  const [isComparing, setIsComparing] = useState(false);
   const [pageSpeedBefore, setPageSpeedBefore] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
   const [pageSpeedAfter, setPageSpeedAfter] = useState<{ mobile: PageSpeedReport, desktop: PageSpeedReport } | null>(null);
   const [optimizationPlan, setOptimizationPlan] = useState<Recommendation[] | null>(null);
@@ -287,7 +288,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
 
 
-  const [comparisonAnalysis, setComparisonAnalysis] = useState<any>(null);
+  const [comparisonAnalysis, ] = useState<any>(null);
 
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
@@ -359,43 +360,83 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan]);
 
   const handleCompare = useCallback(async () => {
-    if (!pageSpeedBefore) return;
+    if (!pageSpeedBefore || !user) return;
 
-    // Mocking the second pagespeed report for comparison
-    setPageSpeedAfter(pageSpeedBefore);
+    setIsComparing(true);
+    setApiError('');
 
-    if (pageSpeedBefore && sessionStartTime) {
-      const sessionEndTime = Date.now();
-      const duration = sessionEndTime - sessionStartTime;
-      const newSession: Session = {
-        id: new Date().toISOString(),
-        url,
-        startTime: new Date(sessionStartTime).toISOString(),
-        endTime: new Date(sessionEndTime).toISOString(),
-        duration,
-        report: pageSpeedBefore, // Using before for after as it's mocked
-        beforeScores: {
-          mobile: pageSpeedBefore?.mobile.lighthouseResult.categories.performance.score || 0,
-          desktop: pageSpeedBefore?.desktop.lighthouseResult.categories.performance.score || 0,
-        },
-        afterScores: {
-          mobile: pageSpeedBefore.mobile.lighthouseResult.categories.performance.score,
-          desktop: pageSpeedBefore.desktop.lighthouseResult.categories.performance.score,
-        },
-        userId: user!.uid,
-      };
-      const analysis = {
-        summary: "Mock summary",
-        improvements: ["Mock improvement"],
-        regressions: [],
-        finalRecommendations: [{title: "Mock recommendation", description: "Mock description"}],
-      };
-      setComparisonAnalysis(analysis);
-      newSession.comparisonAnalysis = analysis;
-      setSessionLog(prevSessions => [newSession, ...prevSessions]);
+    try {
+        const idToken = await user.getIdToken();
+        const response = await fetch('/api/free-measure', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${idToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ urlToScan: url }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = 'An unknown error occurred during comparison.';
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.error || 'Failed to fetch comparison report.';
+            } catch (e) {
+                console.error("Could not parse error response as JSON:", errorText);
+                errorMessage = `A server error occurred during comparison. (Received non-JSON response)`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        const { pageSpeedReport: afterReport, optimizationPlan: newOptimizationPlan } = await response.json();
+        setPageSpeedAfter(afterReport);
+        setOptimizationPlan(newOptimizationPlan);
+
+        if (sessionStartTime) {
+            const sessionEndTime = Date.now();
+            const duration = sessionEndTime - sessionStartTime;
+
+            const getScore = (report: any, strategy: 'mobile' | 'desktop') => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
+
+            const newSession: Session = {
+                id: new Date().toISOString(),
+                url,
+                startTime: new Date(sessionStartTime).toISOString(),
+                endTime: new Date(sessionEndTime).toISOString(),
+                duration,
+                report: afterReport,
+                beforeScores: {
+                    mobile: getScore(pageSpeedBefore, 'mobile'),
+                    desktop: getScore(pageSpeedBefore, 'desktop'),
+                },
+                afterScores: {
+                    mobile: getScore(afterReport, 'mobile'),
+                    desktop: getScore(afterReport, 'desktop'),
+                },
+                userId: user.uid,
+            };
+
+            const sessionResponse = await fetch(`/api/sessions?userId=${user.uid}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newSession),
+            });
+            if (!sessionResponse.ok) {
+                throw new Error('Failed to save session.');
+            }
+            const savedSession = await sessionResponse.json();
+
+            setSessionLog(prevSessions => [savedSession, ...prevSessions]);
+        }
+
+    } catch (error: any) {
+        setApiError(error.message);
+    } finally {
+        setIsComparing(false);
+        setSessionStartTime(null);
     }
-    setSessionStartTime(null);
-  }, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user]);
+}, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(cleanedHtml);
@@ -484,9 +525,9 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                       {'Measure Speed'}
                     </button>
                     {pageSpeedBefore && (
-                      <button onClick={handleCompare} disabled={isMeasuring || !cleanedHtml} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
-                        {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
-                        {'Compare'}
+                      <button onClick={handleCompare} disabled={isMeasuring || isComparing || !cleanedHtml} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
+                        {isComparing ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
+                        {isComparing ? 'Comparing...' : 'Compare'}
                       </button>
                     )}
                 </div>
