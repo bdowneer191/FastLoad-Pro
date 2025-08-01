@@ -30,6 +30,7 @@ export interface Session {
   beforeScores: { mobile: number, desktop: number };
   afterScores: { mobile: number, desktop: number };
   userId: string;
+  comparisonAnalysis?: any;
 }
 
 export interface UserData {
