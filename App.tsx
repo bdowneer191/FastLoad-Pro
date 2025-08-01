@@ -117,7 +117,7 @@ const PageSpeedScores = ({ report, comparisonReport = null }: PageSpeedScoresPro
         const scoreDiff = compareCategory ? Math.round(compareCategory.score * 100) - Math.round(category.score * 100) : null;
         
         return (
-          <div key={catId} className="text-center p-2 bg-brand-background rounded-lg flex flex-col items-center justify-start h-full">
+          <div key={catId} className="text-center p-2 bg-brand-background rounded-lg flex flex-col items-center justify-start h-full" style={{ transform: 'rotateY(-5deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
             <p className="text-xs font-semibold text-brand-text-secondary mb-2 h-8 flex items-center text-center justify-center">{getCategoryName(catId)}</p>
             <div className="flex-grow flex items-center justify-center w-full">
                 <div className="flex items-center justify-around w-full">
@@ -288,32 +288,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
 
 
-  useEffect(() => {
-    if (pageSpeedAfter && sessionStartTime) {
-      const sessionEndTime = Date.now();
-      const duration = sessionEndTime - sessionStartTime;
-      console.log(`Session duration: ${duration}ms`);
-      const newSession: Session = {
-        id: new Date().toISOString(),
-        url,
-        startTime: new Date(sessionStartTime).toISOString(),
-        endTime: new Date(sessionEndTime).toISOString(),
-        duration,
-        report: pageSpeedAfter,
-        beforeScores: {
-          mobile: pageSpeedBefore?.mobile.lighthouseResult.categories.performance.score || 0,
-          desktop: pageSpeedBefore?.desktop.lighthouseResult.categories.performance.score || 0,
-        },
-        afterScores: {
-          mobile: pageSpeedAfter.mobile.lighthouseResult.categories.performance.score,
-          desktop: pageSpeedAfter.desktop.lighthouseResult.categories.performance.score,
-        },
-        userId: user!.uid,
-      };
-      setSessionLog(prevSessions => [newSession, ...prevSessions]);
-      setSessionStartTime(null);
-    }
-  }, [pageSpeedAfter, sessionStartTime, setSessionLog, url]);
+  const [comparisonAnalysis, setComparisonAnalysis] = useState<any>(null);
 
   const handleMeasure = async () => {
     if (!url) { setApiError('Please enter a URL to measure.'); return; }
@@ -387,7 +362,37 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     if (pageSpeedBefore) {
       setPageSpeedAfter(pageSpeedBefore);
     }
-  }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan, pageSpeedBefore]);
+
+    if (pageSpeedBefore && pageSpeedAfter && sessionStartTime) {
+      const sessionEndTime = Date.now();
+      const duration = sessionEndTime - sessionStartTime;
+      const newSession: Session = {
+        id: new Date().toISOString(),
+        url,
+        startTime: new Date(sessionStartTime).toISOString(),
+        endTime: new Date(sessionEndTime).toISOString(),
+        duration,
+        report: pageSpeedAfter,
+        beforeScores: {
+          mobile: pageSpeedBefore?.mobile.lighthouseResult.categories.performance.score || 0,
+          desktop: pageSpeedBefore?.desktop.lighthouseResult.categories.performance.score || 0,
+        },
+        afterScores: {
+          mobile: pageSpeedAfter.mobile.lighthouseResult.categories.performance.score,
+          desktop: pageSpeedAfter.desktop.lighthouseResult.categories.performance.score,
+        },
+        userId: user!.uid,
+      };
+      setSessionLog(prevSessions => [newSession, ...prevSessions]);
+      setSessionStartTime(null);
+      setComparisonAnalysis({
+        summary: "Mock summary",
+        improvements: ["Mock improvement"],
+        regressions: [],
+        finalRecommendations: [{title: "Mock recommendation", description: "Mock description"}],
+      });
+    }
+  }, [originalHtml, options, cleanHtml, isCleaning, optimizationPlan, pageSpeedBefore, pageSpeedAfter, sessionStartTime, setSessionLog, url, user]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(cleanedHtml);
