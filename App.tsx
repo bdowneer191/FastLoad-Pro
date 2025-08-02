@@ -4,7 +4,7 @@ import { auth } from './services/firebase.ts';
 import Icon from './components/Icon.tsx';
 import SetupGuide from './components/SetupGuide.tsx';
 import SessionLog from './components/SessionLog.tsx';
-import SessionTimer from './components/SessionTimer.tsx';
+import DigitalClock from './components/DigitalClock.tsx';
 import Auth from './components/Auth.tsx';
 import VerifyEmail from './components/VerifyEmail.tsx';
 import UserProfile from './components/UserProfile.tsx';
@@ -300,6 +300,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     setIsMeasuring(true);
     setApiError('');
     setSessionLoadError('');
+    setPageSpeedAfter(null);
     setSessionStartTime(Date.now());
 
     try {
@@ -399,7 +400,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
         if (sessionStartTime) {
             const sessionEndTime = Date.now();
-            const duration = sessionEndTime - sessionStartTime;
+            const duration = (sessionEndTime - sessionStartTime) / 1000;
 
             const getScore = (report: any, strategy: 'mobile' | 'desktop') => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
 
@@ -439,6 +440,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     } finally {
         setIsComparing(false);
         setSessionStartTime(null);
+        setPageSpeedAfter(null);
     }
 }, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user]);
 
@@ -523,12 +525,14 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
               {sessionLoadError && <p className="mt-2 text-sm text-brand-danger p-3 bg-brand-danger/10 border border-brand-danger/30 rounded-lg">{sessionLoadError}</p>}
             </div>
             <Step number={1} title="Measure Your Page Speed">
-                {sessionStartTime && <SessionTimer startTime={new Date(sessionStartTime).toISOString()} />}
-                <p className="text-sm text-brand-text-secondary mb-3">
-                  You have {200 - (userData.freeTrialUsage || 0)} free trials remaining.
-                </p>
+                <div className="flex justify-between items-center mb-4">
+                    <p className="text-sm text-brand-text-secondary">
+                        You have {200 - (userData.freeTrialUsage || 0)} free trials remaining.
+                    </p>
+                    {sessionStartTime && <DigitalClock startTime={new Date(sessionStartTime).toISOString()} />}
+                </div>
                 <div className="flex gap-2">
-                    <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
+                    <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); setPageSpeedAfter(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
                     <button onClick={handleMeasure} disabled={isMeasuring || !url || ((userData.freeTrialUsage || 0) >= 200 && !stripeRole)} className="flex items-center justify-center gap-2 w-48 py-3 px-4 bg-gradient-to-r from-brand-accent-start to-brand-accent-end text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:from-brand-surface disabled:to-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
                       {isMeasuring ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
                       {'Measure Speed'}
