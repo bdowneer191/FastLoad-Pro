@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
-import { getDhakaDate, formatDuration, isToday } from '../utils/time';
+import { getDhakaDate, formatDuration } from '../utils/time';
 import { Session } from '../types';
 
 interface SessionLogProps {
@@ -55,11 +55,10 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(true);
     const [isClearing, setIsClearing] = useState(false);
-    const [showAll, setShowAll] = useState(false);
 
     const displayedSessions = useMemo(() => {
-        return showAll ? sessions : sessions.slice(0, 3);
-    }, [sessions, showAll]);
+        return sessions.slice(0, 3);
+    }, [sessions]);
 
     const handleDownload = () => {
         const csv = convertToCSV(sessions);
@@ -114,7 +113,7 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                             <div>
                                 <h4 className="font-semibold text-brand-text-primary">Your Session Log</h4>
                                 <p className="text-xs text-brand-text-secondary mt-1">
-                                    {showAll ? `Showing all ${sessions.length} sessions.` : `Showing ${todaySessions.length} of ${sessions.length} total sessions from today.`}
+                                    {`Showing the latest ${displayedSessions.length} of ${sessions.length} total sessions.`}
                                 </p>
                             </div>
                            <div className="flex gap-2 flex-wrap">
