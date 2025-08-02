@@ -1,7 +1,6 @@
-import { ChangeEvent, useState, useEffect } from 'react';
+import { ChangeEvent } from 'react';
 import { User, updateProfile, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { auth, db } from '../services/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth } from '../services/firebase';
 
 interface UserSettingsModalProps {
     user: User;
