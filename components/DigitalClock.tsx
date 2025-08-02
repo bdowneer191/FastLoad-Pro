@@ -27,23 +27,23 @@ const DigitalClock: React.FC<DigitalClockProps> = ({ startTime, onTick }) => {
 
   return (
     <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg shadow-lg" style={{ perspective: '1000px' }}>
-        <div className="relative" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(-10deg) rotateY(20deg)' }}>
-            <div
-                className="text-4xl font-mono text-cyan-400 bg-gray-800 px-4 py-2 rounded-lg"
-                style={{
-                    textShadow: '0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff',
-                    transform: 'translateZ(20px)',
-                    boxShadow: '0 0 10px rgba(0, 255, 255, 0.5), inset 0 0 5px rgba(0, 255, 255, 0.3)',
-                    border: '1px solid rgba(0, 255, 255, 0.2)'
-                }}
-            >
-                {duration}
-            </div>
-            <div
-                className="absolute top-0 left-0 w-full h-full bg-black opacity-50 rounded-lg"
-                style={{ transform: 'translateZ(-20px) rotateX(10deg) rotateY(-10deg) scale(1.05)' }}
-            />
+      <div className="relative" style={{ transformStyle: 'preserve-3d', transform: 'rotateX(-15deg) rotateY(25deg)' }}>
+        <div
+          className="text-5xl font-mono text-cyan-300 bg-gray-800 px-6 py-2 rounded-lg"
+          style={{
+            textShadow: '0 0 5px #0ff, 0 0 15px #0ff, 0 0 25px #0ff, 0 0 50px #0ff, 1px 1px 2px rgba(0,0,0,0.5)',
+            transform: 'translateZ(30px)',
+            boxShadow: '0 0 15px rgba(0, 255, 255, 0.6), inset 0 0 8px rgba(0, 255, 255, 0.4)',
+            border: '2px solid rgba(0, 255, 255, 0.3)'
+          }}
+        >
+          {duration}
         </div>
+        <div
+          className="absolute top-0 left-0 w-full h-full bg-black opacity-60 rounded-lg"
+          style={{ transform: 'translateZ(-30px) rotateX(15deg) rotateY(-15deg) scale(1.1)' }}
+        />
+      </div>
     </div>
   );
 };

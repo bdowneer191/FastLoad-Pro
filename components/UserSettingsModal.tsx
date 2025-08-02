@@ -1,7 +1,6 @@
-import { ChangeEvent, useState, useEffect } from 'react';
+import { ChangeEvent } from 'react';
 import { User, updateProfile, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { auth, db } from '../services/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth } from '../services/firebase';
 
 interface UserSettingsModalProps {
     user: User;
@@ -10,38 +9,6 @@ interface UserSettingsModalProps {
 }
 
 const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) => {
-    const [timezones, setTimezones] = useState<string[]>([]);
-    const [selectedTimezone, setSelectedTimezone] = useState('');
-
-    useEffect(() => {
-        const fetchTimezones = async () => {
-            try {
-                const response = await fetch('http://worldtimeapi.org/api/timezone');
-                const data = await response.json();
-                setTimezones(data);
-            } catch (error) {
-                console.error('Failed to fetch timezones:', error);
-                // Fallback to a more comprehensive list if the API fails
-                setTimezones([
-                    "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-                    "Europe/London", "Europe/Paris", "Asia/Tokyo", "Asia/Dhaka", "Australia/Sydney"
-                ]);
-            }
-        };
-
-        const fetchUserTimezone = async () => {
-            const userDocRef = doc(db, 'users', user.uid);
-            const docSnap = await getDoc(userDocRef);
-            if (docSnap.exists() && docSnap.data().timezone) {
-                setSelectedTimezone(docSnap.data().timezone);
-            }
-        };
-
-        if (isOpen) {
-            fetchTimezones();
-            fetchUserTimezone();
-        }
-    }, [isOpen, user.uid]);
 
     const handleSave = async () => {
         const displayNameInput = document.getElementById('displayName') as HTMLInputElement;
@@ -51,10 +18,6 @@ const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) =>
             await updateProfile(user, { displayName: newDisplayName });
         }
 
-        if (selectedTimezone) {
-            const userDocRef = doc(db, 'users', user.uid);
-            await setDoc(userDocRef, { timezone: selectedTimezone }, { merge: true });
-        }
         onClose();
     };
 
@@ -162,25 +125,6 @@ const UserSettingsModal = ({ user, isOpen, onClose }: UserSettingsModalProps) =>
                     </div>
                 </div>
 
-                {/* Timezone Settings Section */}
-                <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-brand-text-primary mb-4">Timezone</h3>
-                    <div className="mt-4">
-                        <label htmlFor="timezone" className="block text-sm font-medium text-brand-text-secondary mb-1">
-                            Select your timezone
-                        </label>
-                        <select
-                            id="timezone"
-                            value={selectedTimezone}
-                            onChange={(e) => setSelectedTimezone(e.target.value)}
-                            className="w-full p-2 bg-brand-background border border-brand-border rounded-lg"
-                        >
-                            {timezones.map(tz => (
-                                <option key={tz} value={tz}>{tz}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
 
                 <div className="flex justify-between items-center mt-8">
                     <button
