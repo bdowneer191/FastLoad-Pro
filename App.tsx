@@ -230,6 +230,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const [aiAppliedNotification, setAiAppliedNotification] = useState('');
 
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [sessionDuration, setSessionDuration] = useState(0);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   const [userData, setUserData] = useState<{ freeTrialUsage?: number }>({});
@@ -400,7 +401,6 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
 
         if (sessionStartTime) {
             const sessionEndTime = Date.now();
-            const duration = (sessionEndTime - sessionStartTime) / 1000;
 
             const getScore = (report: any, strategy: 'mobile' | 'desktop') => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
 
@@ -409,7 +409,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                 url,
                 startTime: new Date(sessionStartTime).toISOString(),
                 endTime: new Date(sessionEndTime).toISOString(),
-                duration,
+                duration: sessionDuration,
                 report: afterReport,
                 beforeScores: {
                     mobile: getScore(pageSpeedBefore, 'mobile'),
@@ -529,7 +529,12 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                     <p className="text-sm text-brand-text-secondary">
                         You have {200 - (userData.freeTrialUsage || 0)} free trials remaining.
                     </p>
-                    {sessionStartTime && <DigitalClock startTime={new Date(sessionStartTime).toISOString()} />}
+                    {sessionStartTime && (
+                        <div className="flex items-center gap-x-2">
+                            <span className="text-sm font-medium text-brand-text-secondary">Active Session:</span>
+                            <DigitalClock startTime={new Date(sessionStartTime).toISOString()} onTick={setSessionDuration} />
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-2">
                     <input type="url" value={url} onChange={e => { setUrl(e.target.value); setPageSpeedBefore(null); setPageSpeedAfter(null); }} placeholder="https://your-website.com/your-post" className="flex-grow p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-accent-start focus:border-brand-accent-start focus:outline-none text-sm font-mono transition-colors"/>
