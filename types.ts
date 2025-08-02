@@ -27,8 +27,8 @@ export interface Session {
   endTime: string;
   duration: number;
   report: { mobile: PageSpeedReport, desktop: PageSpeedReport };
-  beforeScores: { mobile: number, desktop: number };
-  afterScores: { mobile: number, desktop: number };
+  beforeScores: { mobile: number, desktop: number, accessibility: number, bestPractices: number, seo: number };
+  afterScores: { mobile: number, desktop: number, accessibility: number, bestPractices: number, seo: number };
   userId: string;
   comparisonAnalysis?: any;
 }
