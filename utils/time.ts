@@ -7,9 +7,8 @@ const dhakaTimeOptions: Intl.DateTimeFormatOptions = {
   hour12: true,
 };
 
-// Options for formatting date in Dhaka
-const dhakaDateOptions: Intl.DateTimeFormatOptions = {
-  timeZone: 'Asia/Dhaka',
+// Options for formatting date
+const dateOptions: Intl.DateTimeFormatOptions = {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
@@ -20,7 +19,7 @@ export const getDhakaTime = (date: Date): string => {
 };
 
 export const getDhakaDate = (date: Date): string => {
-  return date.toLocaleDateString('en-GB', dhakaDateOptions);
+  return date.toLocaleDateString('en-GB', dateOptions);
 };
 
 

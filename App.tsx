@@ -443,7 +443,6 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     } finally {
         setIsComparing(false);
         setSessionStartTime(null);
-        setPageSpeedAfter(null);
     }
 }, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user, sessionDuration]);
 
