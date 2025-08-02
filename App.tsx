@@ -302,6 +302,9 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     setApiError('');
     setSessionLoadError('');
     setPageSpeedAfter(null);
+    setOriginalHtml('');
+    setCleanedHtml('');
+    setImpact(null);
     setSessionStartTime(Date.now());
 
     try {
