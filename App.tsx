@@ -405,7 +405,16 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         if (sessionStartTime) {
             const sessionEndTime = Date.now();
 
-            const getScore = (report: any, strategy: 'mobile' | 'desktop') => report?.[strategy]?.lighthouseResult?.categories?.performance?.score ?? 0;
+            const getScores = (report: any, strategy: 'mobile' | 'desktop') => {
+                const categories = report?.[strategy]?.lighthouseResult?.categories;
+                return {
+                    mobile: categories?.performance?.score ?? 0,
+                    desktop: categories?.performance?.score ?? 0,
+                    accessibility: categories?.accessibility?.score ?? 0,
+                    bestPractices: categories?.['best-practices']?.score ?? 0,
+                    seo: categories?.seo?.score ?? 0,
+                };
+            };
 
             const newSession: Session = {
                 id: new Date().toISOString(),
@@ -414,14 +423,8 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                 endTime: new Date(sessionEndTime).toISOString(),
                 duration: sessionDuration,
                 report: afterReport,
-                beforeScores: {
-                    mobile: getScore(pageSpeedBefore, 'mobile'),
-                    desktop: getScore(pageSpeedBefore, 'desktop'),
-                },
-                afterScores: {
-                    mobile: getScore(afterReport, 'mobile'),
-                    desktop: getScore(afterReport, 'desktop'),
-                },
+                beforeScores: getScores(pageSpeedBefore, 'mobile'),
+                afterScores: getScores(afterReport, 'mobile'),
                 userId: user.uid,
             };
 

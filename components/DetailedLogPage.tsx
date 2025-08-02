@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Session } from '../types';
 import { getDhakaDate, formatDuration } from '../utils/time';
 import Icon from './Icon';
@@ -44,6 +45,7 @@ const convertToCSV = (sessions: Session[]): string => {
 };
 
 const DetailedLogPage: React.FC<DetailedLogPageProps> = ({ sessions }) => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<'day' | 'week' | 'month' | 'year'>('day');
 
   const filteredSessions = useMemo(() => {
@@ -91,20 +93,27 @@ const DetailedLogPage: React.FC<DetailedLogPageProps> = ({ sessions }) => {
           <button onClick={() => setFilter('month')} className={`px-4 py-2 rounded ${filter === 'month' ? 'bg-brand-accent-start text-white' : 'bg-brand-surface'}`}>Month</button>
           <button onClick={() => setFilter('year')} className={`px-4 py-2 rounded ${filter === 'year' ? 'bg-brand-accent-start text-white' : 'bg-brand-surface'}`}>Year</button>
         </div>
-        <button onClick={handleDownload} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
-          <Icon name="sheet" className="w-4 h-4" /> Download CSV
-        </button>
+        <div className="flex items-center gap-x-2">
+            <button onClick={handleDownload} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
+            <Icon name="sheet" className="w-4 h-4" /> Download CSV
+            </button>
+            <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
+                <Icon name="close" className="w-4 h-4" /> Close
+            </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[600px] text-left">
           <thead>
             <tr className="border-b border-brand-border text-xs text-brand-text-secondary uppercase">
-              <th className="py-2 pr-2 font-semibold">Date (Dhaka)</th>
+              <th className="py-2 pr-2 font-semibold">Date</th>
               <th className="py-2 px-2 font-semibold">URL</th>
               <th className="py-2 px-2 font-semibold">Duration</th>
-              <th className="py-2 pl-2 font-semibold">Mobile Perf.</th>
-              <th className="py-2 pl-2 font-semibold">Desktop Perf.</th>
+              <th className="py-2 pl-2 font-semibold">Performance</th>
+              <th className="py-2 pl-2 font-semibold">Accessibility</th>
+              <th className="py-2 pl-2 font-semibold">Best Practices</th>
+              <th className="py-2 pl-2 font-semibold">SEO</th>
             </tr>
           </thead>
           <tbody>
@@ -114,7 +123,9 @@ const DetailedLogPage: React.FC<DetailedLogPageProps> = ({ sessions }) => {
                 <td className="py-3 px-2 truncate max-w-xs text-brand-accent-start" title={session.url}>{session.url}</td>
                 <td className="py-3 px-2 font-mono">{formatDuration(session.duration)}</td>
                 <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.mobile} after={session.afterScores.mobile} /></td>
-                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.desktop} after={session.afterScores.desktop} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.accessibility} after={session.afterScores.accessibility} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.bestPractices} after={session.afterScores.bestPractices} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.seo} after={session.afterScores.seo} /></td>
               </tr>
             ))}
           </tbody>

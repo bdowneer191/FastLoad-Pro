@@ -57,11 +57,9 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
     const [isClearing, setIsClearing] = useState(false);
     const [showAll, setShowAll] = useState(false);
 
-    const todaySessions = useMemo(() => {
-        return sessions.filter(s => isToday(new Date(s.startTime)));
-    }, [sessions]);
-
-    const displayedSessions = showAll ? sessions : todaySessions;
+    const displayedSessions = useMemo(() => {
+        return showAll ? sessions : sessions.slice(0, 3);
+    }, [sessions, showAll]);
 
     const handleDownload = () => {
         const csv = convertToCSV(sessions);
@@ -120,12 +118,12 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                                 </p>
                             </div>
                            <div className="flex gap-2 flex-wrap">
-                             {sessions.length > todaySessions.length && (
+                             {sessions.length > 3 && (
                                 <button
-                                    onClick={() => setShowAll(!showAll)}
+                                    onClick={() => navigate('/logs')}
                                     className="text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors"
                                 >
-                                    {showAll ? 'Show Today' : `Show All History (${sessions.length})`}
+                                    View Detailed Log
                                 </button>
                              )}
                               <button onClick={handleDownload} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
@@ -144,11 +142,13 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                                 <table className="w-full min-w-[600px] text-left">
                                     <thead>
                                         <tr className="border-b border-brand-border text-xs text-brand-text-secondary uppercase">
-                                            <th className="py-2 pr-2 font-semibold">Date (Dhaka)</th>
+                                            <th className="py-2 pr-2 font-semibold">Date</th>
                                             <th className="py-2 px-2 font-semibold">URL</th>
                                             <th className="py-2 px-2 font-semibold">Duration</th>
-                                            <th className="py-2 pl-2 font-semibold">Mobile Perf.</th>
-                                            <th className="py-2 pl-2 font-semibold">Desktop Perf.</th>
+                                            <th className="py-2 pl-2 font-semibold">Performance</th>
+                                            <th className="py-2 pl-2 font-semibold">Accessibility</th>
+                                            <th className="py-2 pl-2 font-semibold">Best Practices</th>
+                                            <th className="py-2 pl-2 font-semibold">SEO</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -158,7 +158,9 @@ const SessionLog = ({ sessions, setSessions, userId }: SessionLogProps) => {
                                                 <td className="py-3 px-2 truncate max-w-xs text-brand-accent-start" title={session.url}>{session.url}</td>
                                                 <td className="py-3 px-2 font-mono">{formatDuration(session.duration)}</td>
                                                 <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.mobile} after={session.afterScores.mobile} /></td>
-                                                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.desktop} after={session.afterScores.desktop} /></td>
+                                                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.accessibility} after={session.afterScores.accessibility} /></td>
+                                                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.bestPractices} after={session.afterScores.bestPractices} /></td>
+                                                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.seo} after={session.afterScores.seo} /></td>
                                             </tr>
                                         ))}
                                     </tbody>
