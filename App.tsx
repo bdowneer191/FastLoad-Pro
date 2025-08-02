@@ -442,7 +442,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
         setSessionStartTime(null);
         setPageSpeedAfter(null);
     }
-}, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user]);
+}, [pageSpeedBefore, sessionStartTime, setSessionLog, url, user, sessionDuration]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(cleanedHtml);
