@@ -536,7 +536,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                     </p>
                     {sessionStartTime && (
                         <div className="flex items-center gap-x-2">
-                            <span className="text-sm font-medium text-brand-text-secondary">Active Session:</span>
+                            <span className="text-sm font-medium text-brand-text-secondary self-center">Active Session:</span>
                             <DigitalClock startTime={new Date(sessionStartTime).toISOString()} onTick={setSessionDuration} />
                         </div>
                     )}
