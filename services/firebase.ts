@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GithubAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { getAuth, GithubAuthProvider, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // ✅ Reads configuration from Vercel's Environment Variables
@@ -28,5 +28,6 @@ export const db = getFirestore(app);
 // Export auth instances and methods
 export const auth = getAuth(app);
 export const githubProvider = new GithubAuthProvider();
+export const googleProvider = new GoogleAuthProvider();
 export { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification };
 
