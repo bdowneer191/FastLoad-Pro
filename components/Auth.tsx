@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { auth, githubProvider } from '../services/firebase';
+import { auth, githubProvider, googleProvider } from '../services/firebase';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import Icon from './Icon';
 
@@ -28,6 +28,15 @@ const Auth = () => {
                 });
                 setError('A verification email has been sent to your email address. Please verify your email before logging in.');
             }
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setError('');
+        try {
+            await signInWithPopup(auth, googleProvider);
         } catch (err: any) {
             setError(err.message);
         }
@@ -84,13 +93,22 @@ const Auth = () => {
                     <div className="flex-grow border-t border-brand-border"></div>
                 </div>
 
-                <button
-                    onClick={handleGitHubSignIn}
-                    className="w-full max-w-xs mx-auto flex items-center justify-center gap-3 py-3 px-6 bg-gray-800 text-white rounded-lg font-semibold transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-background focus:ring-gray-800"
-                >
-                    <Icon name="github" className="w-6 h-6" />
-                    Sign in with GitHub
-                </button>
+                <div className="flex flex-col space-y-4">
+                    <button
+                        onClick={handleGoogleSignIn}
+                        className="w-full max-w-xs mx-auto flex items-center justify-center gap-3 py-3 px-6 bg-red-600 text-white rounded-lg font-semibold transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-background focus:ring-red-600"
+                    >
+                        <Icon name="github" className="w-6 h-6" />
+                        Sign in with Google
+                    </button>
+                    <button
+                        onClick={handleGitHubSignIn}
+                        className="w-full max-w-xs mx-auto flex items-center justify-center gap-3 py-3 px-6 bg-gray-800 text-white rounded-lg font-semibold transition-transform duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-background focus:ring-gray-800"
+                    >
+                        <Icon name="github" className="w-6 h-6" />
+                        Sign in with GitHub
+                    </button>
+                </div>
 
                 <p className="mt-8 text-sm text-brand-text-secondary">
                     {isLogin ? "Don't have an account?" : "Already have an account?"}
