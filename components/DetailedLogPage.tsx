@@ -97,7 +97,7 @@ const DetailedLogPage: React.FC<DetailedLogPageProps> = ({ sessions }) => {
             <button onClick={handleDownload} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
             <Icon name="sheet" className="w-4 h-4" /> Download CSV
             </button>
-            <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-brand-surface border border-brand-border hover:bg-brand-border rounded-md transition-colors">
+            <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-semibold py-2 px-4 bg-red-600 text-white border border-red-700 hover:bg-red-700 rounded-md transition-colors">
                 <Icon name="close" className="w-4 h-4" /> Close
             </button>
         </div>
