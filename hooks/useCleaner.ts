@@ -675,7 +675,7 @@ export const useCleaner = () => {
     // ... (rest of the options logic remains the same)
     if (effectiveOptions.deferScripts) {
         let deferCount = 0;
-        const scripts = Array.from(doc.querySelectorAll('script[src]'));
+        const scripts = Array.from(doc.querySelectorAll('script[src]')) as HTMLScriptElement[];
         const processScriptBatch = (batch: HTMLScriptElement[]) => {
             batch.forEach(script => {
                 const src = script.getAttribute('src');
@@ -739,7 +739,7 @@ export const useCleaner = () => {
 
     if (effectiveOptions.optimizeCssLoading) {
         let cssCount = 0;
-        const stylesheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+        const stylesheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
         const processStylesheetBatch = (batch: HTMLLinkElement[]) => {
             batch.forEach(stylesheet => {
                 if (stylesheet.getAttribute('href')?.includes('fonts.googleapis.com') || stylesheet.getAttribute('media') === 'print') return;
