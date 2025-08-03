@@ -554,35 +554,44 @@ export const useCleaner = () => {
     }
 
     if (effectiveOptions.lazyLoadImages) {
-        const images = doc.querySelectorAll('img');
+        const images = Array.from(doc.querySelectorAll('img'));
         let lazyLoadedCount = 0;
-        images.forEach((img, index) => {
-            // Eagerly load the first two images unless progressive loading is on for all
-            if (index < 2 && !effectiveOptions.progressiveImageLoading) {
-                img.setAttribute('loading', 'eager');
-                img.setAttribute('fetchpriority', 'high');
-            } else {
-                 if (!img.hasAttribute('loading') || img.getAttribute('loading') !== 'eager') {
-                    if (effectiveOptions.progressiveImageLoading) {
-                        const originalSrc = img.getAttribute('src');
-                        if (originalSrc && !originalSrc.startsWith('data:image')) {
-                            img.setAttribute('data-src', originalSrc);
-                            img.setAttribute('src', 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%208%205%22%3E%3C/svg%3E'); // Tiny transparent SVG
-                            img.classList.add('lazy-image');
-                            img.style.filter = 'blur(10px)';
-                            img.style.opacity = '0.8';
-                            img.style.transition = 'filter 0.5s ease, opacity 0.5s ease';
-                            img.removeAttribute('loading'); // Remove native lazy in favor of script
+        const processImageBatch = (batch: HTMLImageElement[]) => {
+            batch.forEach((img, index) => {
+                // Eagerly load the first two images unless progressive loading is on for all
+                if (index < 2 && !effectiveOptions.progressiveImageLoading) {
+                    img.setAttribute('loading', 'eager');
+                    img.setAttribute('fetchpriority', 'high');
+                } else {
+                     if (!img.hasAttribute('loading') || img.getAttribute('loading') !== 'eager') {
+                        if (effectiveOptions.progressiveImageLoading) {
+                            const originalSrc = img.getAttribute('src');
+                            if (originalSrc && !originalSrc.startsWith('data:image')) {
+                                img.setAttribute('data-src', originalSrc);
+                                img.setAttribute('src', 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%208%205%22%3E%3C/svg%3E'); // Tiny transparent SVG
+                                img.classList.add('lazy-image');
+                                img.style.filter = 'blur(10px)';
+                                img.style.opacity = '0.8';
+                                img.style.transition = 'filter 0.5s ease, opacity 0.5s ease';
+                                img.removeAttribute('loading'); // Remove native lazy in favor of script
+                                lazyLoadedCount++;
+                            }
+                        } else { // Fallback to native lazy loading
+                            img.setAttribute('loading', 'lazy');
                             lazyLoadedCount++;
                         }
-                    } else { // Fallback to native lazy loading
-                        img.setAttribute('loading', 'lazy');
-                        lazyLoadedCount++;
+                        img.setAttribute('decoding', 'async');
                     }
-                    img.setAttribute('decoding', 'async');
                 }
-            }
-        });
+            });
+        };
+
+        const batchSize = 50;
+        for (let i = 0; i < images.length; i += batchSize) {
+            const batch = images.slice(i, i + batchSize);
+            processImageBatch(batch);
+        }
+
         if (lazyLoadedCount > 0) actionLog.push(`Lazy-loaded ${lazyLoadedCount} image(s) using ${effectiveOptions.progressiveImageLoading ? 'progressive blur-up' : 'native method'}.`);
     }
 
@@ -599,52 +608,61 @@ export const useCleaner = () => {
         let sizedCount = 0;
         const cdnHosts = ['i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com', 'cloudinary.com', 'imgix.net'];
         
-        doc.querySelectorAll('img').forEach(img => {
-            if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
-                const match = img.src.match(/-(\d+)[xX](\d+)\.(jpg|jpeg|png|webp|gif|avif)/);
-                if (match && match[1] && match[2]) {
-                    img.setAttribute('width', match[1]);
-                    img.setAttribute('height', match[2]);
-                    sizedCount++;
-                }
-            }
-            
-            let wasConverted = false;
-            const targetFormat = effectiveOptions.convertToAvif ? 'avif' : 'webp';
-
-            const convertUrl = (src: string | null): string | null => {
-                if (!src || src.includes('.svg') || src.startsWith('data:')) return src;
-                try {
-                    const url = new URL(src);
-                    if (cdnHosts.some(host => url.hostname.includes(host))) {
-                        if (!url.searchParams.has('format') || url.searchParams.get('format') !== targetFormat) {
-                            url.searchParams.set('format', targetFormat);
-                            wasConverted = true;
-                            return url.toString();
-                        }
+        const images = Array.from(doc.querySelectorAll('img'));
+        const processImageBatch = (batch: HTMLImageElement[]) => {
+            batch.forEach(img => {
+                if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
+                    const match = img.src.match(/-(\d+)[xX](\d+)\.(jpg|jpeg|png|webp|gif|avif)/);
+                    if (match && match[1] && match[2]) {
+                        img.setAttribute('width', match[1]);
+                        img.setAttribute('height', match[2]);
+                        sizedCount++;
                     }
-                } catch (e) { /* Ignore */ }
-                return src;
-            };
+                }
 
-            const newSrc = convertUrl(img.getAttribute('src'));
-            if (newSrc) img.setAttribute('src', newSrc);
-            
-            const srcset = img.getAttribute('srcset');
-            if (srcset) {
-                const newSrcset = srcset.split(',').map(part => {
-                    const [url, desc] = part.trim().split(/\s+/);
-                    const newUrl = convertUrl(url);
-                    return `${newUrl} ${desc || ''}`.trim();
-                }).join(', ');
-                img.setAttribute('srcset', newSrcset);
-            }
-            
-            if(wasConverted) {
-                if (targetFormat === 'avif') convertedToAvifCount++;
-                else convertedToWebpCount++;
-            }
-        });
+                let wasConverted = false;
+                const targetFormat = effectiveOptions.convertToAvif ? 'avif' : 'webp';
+
+                const convertUrl = (src: string | null): string | null => {
+                    if (!src || src.includes('.svg') || src.startsWith('data:')) return src;
+                    try {
+                        const url = new URL(src);
+                        if (cdnHosts.some(host => url.hostname.includes(host))) {
+                            if (!url.searchParams.has('format') || url.searchParams.get('format') !== targetFormat) {
+                                url.searchParams.set('format', targetFormat);
+                                wasConverted = true;
+                                return url.toString();
+                            }
+                        }
+                    } catch (e) { /* Ignore */ }
+                    return src;
+                };
+
+                const newSrc = convertUrl(img.getAttribute('src'));
+                if (newSrc) img.setAttribute('src', newSrc);
+
+                const srcset = img.getAttribute('srcset');
+                if (srcset) {
+                    const newSrcset = srcset.split(',').map(part => {
+                        const [url, desc] = part.trim().split(/\s+/);
+                        const newUrl = convertUrl(url);
+                        return `${newUrl} ${desc || ''}`.trim();
+                    }).join(', ');
+                    img.setAttribute('srcset', newSrcset);
+                }
+
+                if(wasConverted) {
+                    if (targetFormat === 'avif') convertedToAvifCount++;
+                    else convertedToWebpCount++;
+                }
+            });
+        };
+
+        const batchSize = 50;
+        for (let i = 0; i < images.length; i += batchSize) {
+            const batch = images.slice(i, i + batchSize);
+            processImageBatch(batch);
+        }
         if (sizedCount > 0) actionLog.push(`Added dimensions to ${sizedCount} image(s) to prevent layout shift.`);
         if (convertedToAvifCount > 0) actionLog.push(`Converted ${convertedToAvifCount} image(s) to AVIF format.`);
         if (convertedToWebpCount > 0) actionLog.push(`Converted ${convertedToWebpCount} image(s) to WebP format.`);
@@ -657,15 +675,24 @@ export const useCleaner = () => {
     // ... (rest of the options logic remains the same)
     if (effectiveOptions.deferScripts) {
         let deferCount = 0;
-        doc.querySelectorAll('script[src]').forEach(script => {
-            const src = script.getAttribute('src');
-            // Do not defer critical scripts
-            if (src && (src.toLowerCase().includes('jquery') || src.includes('fastload-lazy-loader'))) return;
-            if (!script.hasAttribute('defer') && !script.hasAttribute('async')) {
-                 script.setAttribute('defer', '');
-                 deferCount++;
-            }
-        });
+        const scripts = Array.from(doc.querySelectorAll('script[src]')) as HTMLScriptElement[];
+        const processScriptBatch = (batch: HTMLScriptElement[]) => {
+            batch.forEach(script => {
+                const src = script.getAttribute('src');
+                // Do not defer critical scripts
+                if (src && (src.toLowerCase().includes('jquery') || src.includes('fastload-lazy-loader'))) return;
+                if (!script.hasAttribute('defer') && !script.hasAttribute('async')) {
+                     script.setAttribute('defer', '');
+                     deferCount++;
+                }
+            });
+        };
+
+        const batchSize = 50;
+        for (let i = 0; i < scripts.length; i += batchSize) {
+            const batch = scripts.slice(i, i + batchSize);
+            processScriptBatch(batch);
+        }
         if (deferCount > 0) actionLog.push(`Deferred ${deferCount} non-essential script(s).`);
     }
 
@@ -712,18 +739,27 @@ export const useCleaner = () => {
 
     if (effectiveOptions.optimizeCssLoading) {
         let cssCount = 0;
-        doc.querySelectorAll('link[rel="stylesheet"]').forEach(stylesheet => {
-            if (stylesheet.getAttribute('href')?.includes('fonts.googleapis.com') || stylesheet.getAttribute('media') === 'print') return;
-            stylesheet.setAttribute('media', 'print');
-            stylesheet.setAttribute('onload', "this.onload=null;this.media='all'");
-            const noscript = doc.createElement('noscript');
-            const fallbackLink = stylesheet.cloneNode(true) as HTMLLinkElement;
-            fallbackLink.removeAttribute('media');
-fallbackLink.removeAttribute('onload');
-            noscript.appendChild(fallbackLink);
-            stylesheet.parentNode?.insertBefore(noscript, stylesheet.nextSibling);
-            cssCount++;
-        });
+        const stylesheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+        const processStylesheetBatch = (batch: HTMLLinkElement[]) => {
+            batch.forEach(stylesheet => {
+                if (stylesheet.getAttribute('href')?.includes('fonts.googleapis.com') || stylesheet.getAttribute('media') === 'print') return;
+                stylesheet.setAttribute('media', 'print');
+                stylesheet.setAttribute('onload', "this.onload=null;this.media='all'");
+                const noscript = doc.createElement('noscript');
+                const fallbackLink = stylesheet.cloneNode(true) as HTMLLinkElement;
+                fallbackLink.removeAttribute('media');
+                fallbackLink.removeAttribute('onload');
+                noscript.appendChild(fallbackLink);
+                stylesheet.parentNode?.insertBefore(noscript, stylesheet.nextSibling);
+                cssCount++;
+            });
+        };
+
+        const batchSize = 50;
+        for (let i = 0; i < stylesheets.length; i += batchSize) {
+            const batch = stylesheets.slice(i, i + batchSize);
+            processStylesheetBatch(batch);
+        }
         if(cssCount > 0) actionLog.push(`Deferred ${cssCount} stylesheet(s).`);
     }
 
