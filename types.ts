@@ -68,7 +68,21 @@ export interface ImpactSummary {
   bytesSaved: number;
   nodesRemoved: number;
   estimatedSpeedGain: string;
-  actionLog: string[]; // Detailed log of actions taken
+  actionLog: string[];
+  // Detailed metrics
+  commentsRemoved?: number;
+  embedsLazyLoaded?: number;
+  videosOptimized?: number;
+  bgImagesLazyLoaded?: number;
+  imagesLazyLoaded?: number;
+  imagesToWebP?: number;
+  imagesToAvif?: number;
+  imagesWithSrcset?: number;
+  svgsOptimized?: number;
+  scriptsDeferred?: number;
+  stylesheetsDeferred?: number;
+  fontOptimizations?: number;
+  preconnectsAdded?: number;
 }
 
 export interface Recommendation {
