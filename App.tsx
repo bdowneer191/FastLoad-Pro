@@ -225,6 +225,7 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
   const [cleanedHtml, setCleanedHtml] = useState('');
   const [options, setOptions] = useState(initialOptions);
   const [impact, setImpact] = useState<ImpactSummary | null>(null);
+  const [cleaningProgress, setCleaningProgress] = useState<{ step: number, message: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const { isCleaning, cleanHtml } = useCleaner();
   const [aiAppliedNotification, setAiAppliedNotification] = useState('');
@@ -355,12 +356,19 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     setApiError('');
     setCleanedHtml('');
     setImpact(null);
+    setCleaningProgress({ step: 0, message: 'Initializing optimization...' });
 
-    const { cleanedHtml: resultHtml, summary, effectiveOptions } = await cleanHtml(originalHtml, options, optimizationPlan);
+    const { cleanedHtml: resultHtml, summary, effectiveOptions } = await cleanHtml(
+        originalHtml,
+        options,
+        optimizationPlan,
+        (progress) => setCleaningProgress(progress)
+    );
     
     setCleanedHtml(resultHtml);
     setImpact(summary);
     setOptions(effectiveOptions);
+    setCleaningProgress(null);
 
     if (summary.actionLog.some(log => log.includes('AI recommendation'))) {
         setAiAppliedNotification('AI recommendations have been automatically applied!');
@@ -475,11 +483,17 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
   
-  const impactMetrics = useMemo(() => ([
-      { label: 'Bytes Saved', value: impact ? formattedBytes(impact.bytesSaved) : '-', color: 'text-brand-success' },
-      { label: 'Size Reduction', value: impact?.originalBytes ? `${((impact.bytesSaved / impact.originalBytes) * 100).toFixed(1)}%` : '-', color: 'text-brand-success' },
-      { label: 'Nodes Removed', value: impact?.nodesRemoved || '-', color: 'text-brand-warning' },
-  ]), [impact]);
+  const detailedImpactMetrics = useMemo(() => {
+    if (!impact) return [];
+    return [
+      { label: 'Bytes Saved', value: formattedBytes(impact.bytesSaved), color: 'text-brand-success', icon: 'zap' },
+      { label: 'Size Reduction', value: impact.originalBytes > 0 ? `${((impact.bytesSaved / impact.originalBytes) * 100).toFixed(1)}%` : '0%', color: 'text-brand-success', icon: 'arrow-down-circle' },
+      { label: 'Nodes Removed', value: impact.nodesRemoved || 0, color: 'text-brand-warning', icon: 'trash' },
+      { label: 'Images Optimized', value: (impact.imagesToAvif || 0) + (impact.imagesToWebP || 0), color: 'text-brand-accent-start', icon: 'image' },
+      { label: 'Scripts Deferred', value: impact.scriptsDeferred || 0, color: 'text-brand-accent-start', icon: 'code' },
+      { label: 'Stylesheets Deferred', value: impact.stylesheetsDeferred || 0, color: 'text-brand-accent-start', icon: 'file-text' },
+    ].filter(metric => metric.value !== 0 && metric.value !== '0%');
+  }, [impact]);
 
   const isCleaningLocked = !pageSpeedBefore;
 
@@ -623,107 +637,63 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                         </div>
                     )}
 
-                    <div className="mt-4 space-y-3">
-                        <h4 className="font-semibold text-brand-text-secondary text-sm">Basic Cleanup</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                            <CheckboxOption name="stripComments" label="Strip HTML Comments" checked={options.stripComments} onChange={handleOptionChange} description="Removes <!-- comments -->."/>
-                            <CheckboxOption name="collapseWhitespace" label="Collapse Whitespace" checked={options.collapseWhitespace} onChange={handleOptionChange} description="Removes extra spaces."/>
-                            <CheckboxOption name="minifyInlineCSSJS" label="Minify Inline CSS/JS" checked={options.minifyInlineCSSJS} onChange={handleOptionChange} description="Minifies code in <style>, <script>."/>
-                            <CheckboxOption name="removeEmptyAttributes" label="Remove Empty Attributes" checked={options.removeEmptyAttributes} onChange={handleOptionChange} description="Removes attributes with no value."/>
-                        </div>
+                    {!isCleaning && (
+                      <div className="mt-4 space-y-3">
+                          <h4 className="font-semibold text-brand-text-secondary text-sm">Basic Cleanup</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                              <CheckboxOption name="stripComments" label="Strip HTML Comments" checked={options.stripComments} onChange={handleOptionChange} description="Removes <!-- comments -->."/>
+                              <CheckboxOption name="collapseWhitespace" label="Collapse Whitespace" checked={options.collapseWhitespace} onChange={handleOptionChange} description="Removes extra spaces."/>
+                              <CheckboxOption name="minifyInlineCSSJS" label="Minify Inline CSS/JS" checked={options.minifyInlineCSSJS} onChange={handleOptionChange} description="Minifies code in <style>, <script>."/>
+                              <CheckboxOption name="removeEmptyAttributes" label="Remove Empty Attributes" checked={options.removeEmptyAttributes} onChange={handleOptionChange} description="Removes attributes with no value."/>
+                          </div>
 
-                        <h4 className="font-semibold text-brand-text-secondary text-sm pt-2">Preservation</h4>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                            <CheckboxOption name="preserveIframes" label="Preserve iFrames" checked={options.preserveIframes} onChange={handleOptionChange} description="Keeps all <iframe> tags untouched."/>
-                            <CheckboxOption name="preserveLinks" label="Preserve Links" checked={options.preserveLinks} onChange={handleOptionChange} description="Keeps all <a> tags untouched."/>
-                            <CheckboxOption name="preserveShortcodes" label="Preserve Shortcodes" checked={options.preserveShortcodes} onChange={handleOptionChange} description="Keeps WordPress [shortcodes] safe."/>
-                        </div>
+                          <h4 className="font-semibold text-brand-text-secondary text-sm pt-2">Preservation</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                              <CheckboxOption name="preserveIframes" label="Preserve iFrames" checked={options.preserveIframes} onChange={handleOptionChange} description="Keeps all <iframe> tags untouched."/>
+                              <CheckboxOption name="preserveLinks" label="Preserve Links" checked={options.preserveLinks} onChange={handleOptionChange} description="Keeps all <a> tags untouched."/>
+                              <CheckboxOption name="preserveShortcodes" label="Preserve Shortcodes" checked={options.preserveShortcodes} onChange={handleOptionChange} description="Keeps WordPress [shortcodes] safe."/>
+                          </div>
 
-                        <h4 className="font-semibold text-brand-success text-sm pt-2">Performance Optimizations</h4>
-                         <div className="space-y-1">
-                            <CheckboxOption name="lazyLoadImages" label="Lazy Load Images" checked={options.lazyLoadImages} onChange={handleOptionChange} isRecommended description="Loads images as they enter the viewport."/>
-                            <CheckboxOption name="lazyLoadEmbeds" label="Lazy Load Social Embeds" checked={options.lazyLoadEmbeds} onChange={handleOptionChange} isRecommended description="Replaces YouTube, X, etc., with facades that load on scroll."/>
-                            <CheckboxOption name="optimizeFontLoading" label="Optimize Font Loading" checked={options.optimizeFontLoading} onChange={handleOptionChange} isRecommended description="Adds 'display=swap' to Google Fonts to prevent invisible text."/>
-                            <CheckboxOption name="addPrefetchHints" label="Add Preconnect Hints" checked={options.addPrefetchHints} onChange={handleOptionChange} isRecommended description="Speeds up connection to domains like Google Fonts."/>
-                            <CheckboxOption name="deferScripts" label="Defer Non-Essential JavaScript" checked={options.deferScripts} onChange={handleOptionChange} isRecommended description="Prevents JavaScript from blocking page rendering."/>
-                            <CheckboxOption name="optimizeCssLoading" label="Optimize CSS Delivery" checked={options.optimizeCssLoading} onChange={handleOptionChange} isRisky description="Defers non-critical CSS. May cause Flash of Unstyled Content."/>
-                            
-                            <h5 className="font-semibold text-brand-accent-start text-sm pt-3">Advanced Image Optimizations</h5>
-                            <CheckboxOption 
-                                name="optimizeImages" 
-                                label="Convert Images to Next-Gen Formats" 
-                                checked={options.optimizeImages} 
-                                onChange={handleOptionChange} 
-                                isRecommended 
-                                description="Converts images to WebP or AVIF on supported CDNs (e.g., Jetpack, Cloudinary)."
-                            />
-                            <CheckboxOption 
-                                name="convertToAvif" 
-                                label="Prefer AVIF over WebP" 
-                                checked={options.convertToAvif} 
-                                onChange={handleOptionChange}
-                                disabled={!options.optimizeImages}
-                                description="AVIF offers superior compression but has slightly less browser support."
-                            />
-                            <CheckboxOption 
-                                name="addResponsiveSrcset" 
-                                label="Generate Responsive Srcset" 
-                                checked={options.addResponsiveSrcset} 
-                                onChange={handleOptionChange} 
-                                isRecommended 
-                                description="Adds srcset and sizes attributes to prevent loading oversized images on small screens."
-                            />
-                             <CheckboxOption 
-                                name="optimizeSvgs" 
-                                label="Minify Inline SVGs" 
-                                checked={options.optimizeSvgs} 
-                                onChange={handleOptionChange} 
-                                description="Removes unnecessary data and comments from inline SVG code."
-                            />
-                             <h5 className="font-semibold text-brand-accent-end text-sm pt-3">Advanced Media Optimizations</h5>
-                              <CheckboxOption 
-                                  name="progressiveImageLoading" 
-                                  label="Progressive Image Loading (Blur-up)" 
-                                  checked={options.progressiveImageLoading} 
-                                  onChange={handleOptionChange}
-                                  disabled={!options.lazyLoadImages}
-                                  isRecommended
-                                  description="Shows a tiny, blurred placeholder that loads into the full image. Improves perceived speed."
-                              />
-                              <CheckboxOption 
-                                  name="lazyLoadBackgroundImages" 
-                                  label="Lazy Load Background Images" 
-                                  checked={options.lazyLoadBackgroundImages} 
-                                  onChange={handleOptionChange} 
-                                  isRecommended 
-                                  description="Finds and lazy-loads CSS background images set via inline styles."
-                              />
-                              <CheckboxOption 
-                                  name="optimizeVideoElements" 
-                                  label="Optimize HTML5 <video> Elements" 
-                                  checked={options.optimizeVideoElements} 
-                                  onChange={handleOptionChange}
-                                  isRecommended
-                                  description="Replaces <video> tags with a lightweight facade that loads on scroll."
-                              />
-                        </div>
-                        
-                        <h4 className="font-semibold text-brand-warning text-sm pt-2">Advanced (AI)</h4>
-                         <div className="space-y-1">
-                            <CheckboxOption 
-                                name="semanticRewrite" 
-                                label="HTML5 Semantic Rewrite" 
-                                checked={options.semanticRewrite} 
-                                onChange={handleOptionChange} 
-                                description="Rewrites old <b>/<i> tags to modern <strong>/<em>. Does not require an API key."
-                            />
-                        </div>
-                    </div>
+                          <h4 className="font-semibold text-brand-success text-sm pt-2">Performance Optimizations</h4>
+                          <div className="space-y-1">
+                              <CheckboxOption name="lazyLoadImages" label="Lazy Load Images" checked={options.lazyLoadImages} onChange={handleOptionChange} isRecommended description="Loads images as they enter the viewport."/>
+                              <CheckboxOption name="lazyLoadEmbeds" label="Lazy Load Social Embeds" checked={options.lazyLoadEmbeds} onChange={handleOptionChange} isRecommended description="Replaces YouTube, X, etc., with facades that load on scroll."/>
+                              <CheckboxOption name="optimizeFontLoading" label="Optimize Font Loading" checked={options.optimizeFontLoading} onChange={handleOptionChange} isRecommended description="Adds 'display=swap' to Google Fonts to prevent invisible text."/>
+                              <CheckboxOption name="addPrefetchHints" label="Add Preconnect Hints" checked={options.addPrefetchHints} onChange={handleOptionChange} isRecommended description="Speeds up connection to domains like Google Fonts."/>
+                              <CheckboxOption name="deferScripts" label="Defer Non-Essential JavaScript" checked={options.deferScripts} onChange={handleOptionChange} isRecommended description="Prevents JavaScript from blocking page rendering."/>
+                              <CheckboxOption name="optimizeCssLoading" label="Optimize CSS Delivery" checked={options.optimizeCssLoading} onChange={handleOptionChange} isRisky description="Defers non-critical CSS. May cause Flash of Unstyled Content."/>
 
+                              <h5 className="font-semibold text-brand-accent-start text-sm pt-3">Advanced Image Optimizations</h5>
+                              <CheckboxOption name="optimizeImages" label="Convert Images to Next-Gen Formats" checked={options.optimizeImages} onChange={handleOptionChange} isRecommended description="Converts images to WebP or AVIF on supported CDNs."/>
+                              <CheckboxOption name="convertToAvif" label="Prefer AVIF over WebP" checked={options.convertToAvif} onChange={handleOptionChange} disabled={!options.optimizeImages} description="AVIF offers superior compression but has slightly less browser support."/>
+                              <CheckboxOption name="addResponsiveSrcset" label="Generate Responsive Srcset" checked={options.addResponsiveSrcset} onChange={handleOptionChange} isRecommended description="Adds srcset and sizes attributes for responsive images."/>
+                              <CheckboxOption name="optimizeSvgs" label="Minify Inline SVGs" checked={options.optimizeSvgs} onChange={handleOptionChange} description="Removes unnecessary data from inline SVG code."/>
+
+                              <h5 className="font-semibold text-brand-accent-end text-sm pt-3">Advanced Media Optimizations</h5>
+                              <CheckboxOption name="progressiveImageLoading" label="Progressive Image Loading (Blur-up)" checked={options.progressiveImageLoading} onChange={handleOptionChange} disabled={!options.lazyLoadImages} isRecommended description="Shows a tiny, blurred placeholder that loads into the full image."/>
+                              <CheckboxOption name="lazyLoadBackgroundImages" label="Lazy Load Background Images" checked={options.lazyLoadBackgroundImages} onChange={handleOptionChange} isRecommended description="Finds and lazy-loads CSS background images."/>
+                              <CheckboxOption name="optimizeVideoElements" label="Optimize HTML5 <video> Elements" checked={options.optimizeVideoElements} onChange={handleOptionChange} isRecommended description="Replaces <video> tags with a lightweight facade that loads on click."/>
+                          </div>
+
+                          <h4 className="font-semibold text-brand-warning text-sm pt-2">Advanced (AI)</h4>
+                          <div className="space-y-1">
+                              <CheckboxOption name="semanticRewrite" label="HTML5 Semantic Rewrite" checked={options.semanticRewrite} onChange={handleOptionChange} description="Rewrites old <b>/<i> tags to modern <strong>/<em>."/>
+                          </div>
+                      </div>
+                    )}
+
+                    {isCleaning && cleaningProgress && (
+                      <div className="mt-6 text-center">
+                        <div className="w-full bg-brand-border rounded-full h-2.5 mb-4 overflow-hidden">
+                          <div className="bg-gradient-to-r from-brand-accent-start to-brand-accent-end h-2.5 rounded-full transition-all duration-300" style={{ width: `${(cleaningProgress.step / 5) * 100}%` }}></div>
+                        </div>
+                        <p className="text-sm text-brand-text-secondary animate-subtle-pulse">{cleaningProgress.message}</p>
+                      </div>
+                    )}
 
                     <button onClick={handleClean} disabled={!originalHtml || isCleaning} className="w-full mt-6 flex items-center justify-center gap-2 py-3 px-4 bg-brand-success/90 hover:bg-brand-success text-white rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 disabled:bg-brand-surface disabled:text-brand-text-secondary disabled:cursor-not-allowed disabled:transform-none">
                       {isCleaning ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <Icon name="magic" className="w-5 h-5" />}
-                      Clean & Optimize
+                      {isCleaning ? 'Optimizing...' : 'Clean & Optimize'}
                     </button>
                 </Step>
                 
@@ -734,8 +704,8 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                             <textarea readOnly value={cleanedHtml} className="w-full h-48 p-3 bg-brand-background border border-brand-border rounded-lg focus:ring-2 focus:ring-brand-success focus:outline-none text-sm font-mono transition-colors" />
                             <div className="absolute top-2 right-2 flex gap-2">
                                 <button onClick={copyToClipboard} title="Copy to Clipboard" className="p-2 bg-brand-surface hover:bg-brand-border rounded-md text-brand-text-secondary hover:text-brand-text-primary transition-colors">
-                                    <Icon name={copied ? 'clipboard' : 'clipboard'} className="w-5 h-5" />
-                                 </button>
+                                    <Icon name={copied ? 'check-circle' : 'clipboard'} className="w-5 h-5" />
+                                </button>
                                 <button onClick={downloadHtml} title="Download HTML File" className="p-2 bg-brand-surface hover:bg-brand-border rounded-md text-brand-text-secondary hover:text-brand-text-primary transition-colors">
                                     <Icon name="download" className="w-5 h-5" />
                                 </button>
@@ -744,18 +714,24 @@ const MainApp = ({ sessionLog, setSessionLog }: MainAppProps) => {
                         </div>
                         
                         <h3 className="font-semibold mt-4 mb-2 text-brand-success">Optimization Impact</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3 bg-brand-background rounded-lg">
-                            {impactMetrics.map(metric => (
-                                <div key={metric.label} className="text-center">
-                                    <p className="text-xs text-brand-text-secondary">{metric.label}</p>
-                                    <p className={`text-xl font-bold ${metric.color}`}>{metric.value}</p>
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-brand-background rounded-lg border border-brand-border/50">
+                          {detailedImpactMetrics.map(metric => (
+                            <div key={metric.label} className="flex items-center gap-3">
+                              <div className={`p-2 bg-brand-surface rounded-full text-brand-accent-start`}>
+                                <Icon name={metric.icon as any} className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-brand-text-secondary">{metric.label}</p>
+                                <p className={`text-lg font-bold ${metric.color}`}>{metric.value}</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
+
                         {impact.actionLog && impact.actionLog.length > 0 && (
                             <div className="mt-4">
                                 <h4 className="font-semibold text-brand-text-secondary text-sm">Actions Performed:</h4>
-                                <ul className="list-disc list-inside text-sm text-brand-text-secondary space-y-1 mt-2 p-3 bg-brand-background rounded-lg">
+                                <ul className="list-disc list-inside text-sm text-brand-text-secondary space-y-1 mt-2 p-3 bg-brand-background rounded-lg border border-brand-border/50">
                                     {impact.actionLog.map((log, i) => <li key={i}>{log}</li>)}
                                 </ul>
                             </div>

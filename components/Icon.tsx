@@ -1,6 +1,6 @@
 import { SVGProps } from 'react';
 
-type IconName = 'upload' | 'clipboard' | 'download' | 'magic' | 'lightbulb' | 'key' | 'chevronDown' | 'history' | 'trash' | 'sheet' | 'lock' | 'play' | 'github' | 'reddit' | 'spinner' | 'save' | 'close' | 'edit' | 'delete' | 'scan' | 'chevronUp';
+type IconName = 'upload' | 'clipboard' | 'download' | 'magic' | 'lightbulb' | 'key' | 'chevronDown' | 'history' | 'trash' | 'sheet' | 'lock' | 'play' | 'github' | 'reddit' | 'spinner' | 'save' | 'close' | 'edit' | 'delete' | 'scan' | 'chevronUp' | 'check-circle' | 'zap' | 'arrow-down-circle' | 'file-text' | 'image' | 'code';
 
 const icons: Record<IconName, JSX.Element> = {
   upload: (
@@ -84,6 +84,36 @@ const icons: Record<IconName, JSX.Element> = {
     edit: <span>Edit</span>,
     delete: <span>Delete</span>,
     scan: <span>Scan</span>,
+    'check-circle': (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+    ),
+    zap: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+        </svg>
+    ),
+    'arrow-down-circle': (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75l3 3m0 0 3-3m-3 3v-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+    ),
+    'file-text': (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+        </svg>
+    ),
+    image: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+        </svg>
+    ),
+    code: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+        </svg>
+    )
 };
 
 interface IconProps extends SVGProps<SVGSVGElement> {
