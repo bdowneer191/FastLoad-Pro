@@ -308,7 +308,7 @@ export const useCleaner = () => {
         const detailedMetrics: Omit<ImpactSummary, 'originalBytes' | 'cleanedBytes' | 'bytesSaved' | 'nodesRemoved' | 'estimatedSpeedGain' | 'actionLog'> = {};
 
         onProgress?.({ step: 1, message: 'Applying AI recommendations...' });
-        await delay(300);
+        await delay(5000);
 
         let effectiveOptions = { ...options };
         if (recommendations) {
@@ -333,7 +333,7 @@ export const useCleaner = () => {
         let lazyElementsFound = false;
 
         onProgress?.({ step: 2, message: 'Performing semantic rewrites & media optimization...' });
-        await delay(300);
+        await delay(10000);
 
         if (effectiveOptions.semanticRewrite) {
             const count = doc.querySelectorAll('b, i').length;
@@ -368,7 +368,7 @@ export const useCleaner = () => {
         }
 
         onProgress?.({ step: 3, message: 'Optimizing images...' });
-        await delay(300);
+        await delay(15000);
 
         if (effectiveOptions.lazyLoadImages) {
             const images = Array.from(doc.querySelectorAll('img'));
@@ -472,7 +472,7 @@ export const useCleaner = () => {
         }
 
         onProgress?.({ step: 4, message: 'Optimizing scripts and styles...' });
-        await delay(300);
+        await delay(8000);
 
         if (effectiveOptions.deferScripts) {
             let deferCount = 0;
@@ -557,7 +557,7 @@ export const useCleaner = () => {
         }
 
         onProgress?.({ step: 5, message: 'Finalizing HTML and compressing...' });
-        await delay(300);
+        await delay(2000);
 
         const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ALL);
         const nodesToRemove: Node[] = [];
