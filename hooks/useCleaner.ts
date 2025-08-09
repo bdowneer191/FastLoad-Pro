@@ -224,44 +224,42 @@ const lazyLoadScript = `<script id="fastload-lazy-loader">(function(){"use stric
 const imageIntersectionObserverScript = `<script id="fastload-image-lazy-loader">
 (function() {
   'use strict';
-  document.addEventListener("DOMContentLoaded", function() {
-    const lazyImages = Array.from(document.querySelectorAll('img.lazy-image'));
+  const lazyImages = Array.from(document.querySelectorAll('img.lazy-image'));
 
-    if (!('IntersectionObserver' in window)) {
-      lazyImages.forEach(img => loadImg(img));
-      return;
-    }
+  if (!('IntersectionObserver' in window)) {
+    lazyImages.forEach(img => loadImg(img));
+    return;
+  }
 
-    const observer = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target;
-          loadImg(img);
-          observer.unobserve(img);
-        }
+  const observer = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        loadImg(img);
+        observer.unobserve(img);
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  lazyImages.forEach(img => observer.observe(img));
+
+  function loadImg(img) {
+    const picture = img.parentElement;
+    if (picture && picture.tagName === 'PICTURE') {
+      const sources = picture.querySelectorAll('source[data-srcset]');
+      sources.forEach(source => {
+        source.srcset = source.dataset.srcset;
+        source.removeAttribute('data-srcset');
       });
-    }, { rootMargin: '200px' });
-
-    lazyImages.forEach(img => observer.observe(img));
-
-    function loadImg(img) {
-      const picture = img.parentElement;
-      if (picture && picture.tagName === 'PICTURE') {
-        const sources = picture.querySelectorAll('source[data-srcset]');
-        sources.forEach(source => {
-          source.srcset = source.dataset.srcset;
-          source.removeAttribute('data-srcset');
-        });
-      }
-      if (img.dataset.src) {
-        img.src = img.dataset.src;
-        img.removeAttribute('data-src');
-      }
-      img.classList.add('loaded');
-      img.style.filter = 'none';
-      img.style.opacity = '1';
     }
-  });
+    if (img.dataset.src) {
+      img.src = img.dataset.src;
+      img.removeAttribute('data-src');
+    }
+    img.classList.add('loaded');
+    img.style.filter = 'none';
+    img.style.opacity = '1';
+  }
 })();
 </script>`;
 
