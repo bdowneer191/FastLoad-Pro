@@ -294,21 +294,6 @@ const addResponsiveSrcset = (doc: Document): { imagesWithSrcset: number, dimensi
     return { imagesWithSrcset, dimensionsAdded };
 };
 
-declare const Terser: any;
-
-const loadTerser = () => {
-    return new Promise<void>((resolve, reject) => {
-        if (typeof Terser !== 'undefined') {
-            return resolve();
-        }
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/terser/dist/bundle.min.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load Terser.'));
-        document.head.appendChild(script);
-    });
-};
-
 export const useCleaner = () => {
     const [isCleaning, setIsCleaning] = useState(false);
 
@@ -321,8 +306,6 @@ export const useCleaner = () => {
         setIsCleaning(true);
         const actionLog: string[] = [];
         const detailedMetrics: Omit<ImpactSummary, 'originalBytes' | 'cleanedBytes' | 'bytesSaved' | 'nodesRemoved' | 'estimatedSpeedGain' | 'actionLog'> = {};
-
-        const booleanAttributes = new Set(['allowfullscreen', 'async', 'autofocus', 'autoplay', 'checked', 'controls', 'default', 'defer', 'disabled', 'formnovalidate', 'inert', 'ismap', 'itemscope', 'loop', 'multiple', 'muted', 'nomodule', 'novalidate', 'open', 'playsinline', 'readonly', 'required', 'reversed', 'selected', 'truespeed']);
 
         onProgress?.({ step: 1, message: 'Applying AI recommendations...' });
         await delay(5000);
@@ -576,17 +559,6 @@ export const useCleaner = () => {
         onProgress?.({ step: 5, message: 'Finalizing HTML and compressing...' });
         await delay(2000);
 
-        if (effectiveOptions.collapseWhitespace) {
-            const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-            let node;
-            while (node = walker.nextNode()) {
-                if (node.parentElement && !['PRE', 'CODE', 'TEXTAREA', 'SCRIPT', 'STYLE'].includes(node.parentElement.tagName.toUpperCase())) {
-                     node.textContent = node.textContent?.replace(/\s{2,}/g, ' ').trim() || null;
-                }
-            }
-             actionLog.push(`Collapsed whitespace in text nodes.`);
-        }
-
         const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ALL);
         const nodesToRemove: Node[] = [];
 
@@ -596,18 +568,14 @@ export const useCleaner = () => {
             if (effectiveOptions.preserveLinks && node.nodeName.toLowerCase() === 'a') continue;
             if (effectiveOptions.preserveShortcodes && node.nodeType === Node.TEXT_NODE && /\[.*?\]/.test(node.textContent || '')) continue;
             if (effectiveOptions.stripComments && node.nodeType === Node.COMMENT_NODE) {
-                if (!/\[if.*\]/.test(node.textContent || '')) {
-                    nodesToRemove.push(node);
-                }
+                nodesToRemove.push(node);
             }
             if (effectiveOptions.removeEmptyAttributes && node.nodeType === Node.ELEMENT_NODE) {
                 const element = node as Element;
                 const attrsToRemove: string[] = [];
                 for (let i = 0; i < element.attributes.length; i++) {
                     const attr = element.attributes[i];
-                    if (attr.value.trim() === '' && !booleanAttributes.has(attr.name.toLowerCase())) {
-                        attrsToRemove.push(attr.name);
-                    }
+                    if (attr.value.trim() === '') attrsToRemove.push(attr.name);
                 }
                 attrsToRemove.forEach(attrName => element.removeAttribute(attrName));
             }
@@ -619,33 +587,15 @@ export const useCleaner = () => {
         }
         nodesToRemove.forEach(node => node.parentNode?.removeChild(node));
 
+        let finalHtml = `<!DOCTYPE html>\n` + doc.documentElement.outerHTML;
+
         if (effectiveOptions.minifyInlineCSSJS) {
-            try {
-                await loadTerser();
-                const scripts = doc.querySelectorAll('script:not([src])');
-                let minifiedScripts = 0;
-                for (const script of Array.from(scripts)) {
-                    if (script.textContent) {
-                        const result = await Terser.minify(script.textContent);
-                        if (result.code) {
-                            script.textContent = result.code;
-                            minifiedScripts++;
-                        }
-                    }
-                }
-                if (minifiedScripts > 0) actionLog.push(`Minified ${minifiedScripts} inline script(s).`);
-
-                // As researched, a reliable and lightweight client-side CSS minifier is not readily available.
-                // Most robust solutions are build-time tools. We will skip inline CSS minification.
-                actionLog.push(`Skipped inline CSS minification (best performed at build-time).`);
-
-            } catch (error) {
-                console.error("Failed to minify inline JS:", error);
-                actionLog.push(`Failed to minify inline scripts due to an error.`);
-            }
+            // This is a placeholder for a proper minifier.
         }
 
-        let finalHtml = `<!DOCTYPE html>\n` + doc.documentElement.outerHTML;
+        if (effectiveOptions.collapseWhitespace) {
+            finalHtml = finalHtml.replace(/>\s+</g, '><').trim();
+        }
 
         if (lazyElementsFound) {
             finalHtml = finalHtml.replace('</body>', `${lazyLoadScript}</body>`);
@@ -657,8 +607,8 @@ export const useCleaner = () => {
         const nodesRemoved = Math.max(0, originalNodeCount - cleanedNodeCount);
         const bytesSaved = Math.max(0, originalBytes - cleanedBytes);
 
-        if(bytesSaved > 0 && !actionLog.some(l => l.includes('Minified') || l.includes('Reduced') || l.includes('Collapsed'))) {
-            actionLog.push(`Performed minor minifications.`);
+        if(bytesSaved > 0 && !actionLog.some(l => l.includes('Minified') || l.includes('Reduced'))) {
+            actionLog.push(`Reduced whitespace and performed other minor minifications.`);
         }
 
         const summary: ImpactSummary = {
