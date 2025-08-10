@@ -576,27 +576,73 @@ export const useCleaner = () => {
 
         if (effectiveOptions.addPrefetchHints) {
             const processedOrigins = new Set<string>();
-            let hintCount = 0;
+            let preconnectCount = 0;
+            let prefetchCount = 0;
+
+            const highPriorityDomains = [
+                'fonts.gstatic.com',
+                'fonts.googleapis.com',
+                'i0.wp.com', 'i1.wp.com', 'i2.wp.com', 'i3.wp.com',
+                'cloudinary.com',
+                'imgix.net',
+                'cdn.jsdelivr.net'
+            ];
+
+            const lowPriorityDomains = [
+                'www.google-analytics.com',
+                'www.youtube.com',
+                'i.ytimg.com',
+                'platform.twitter.com',
+                'www.instagram.com',
+                'www.tiktok.com',
+                'embed.reddit.com'
+            ];
+
             doc.querySelectorAll('link[href], script[src], img[src]').forEach(el => {
                 try {
                     const href = el.getAttribute('href') || el.getAttribute('src');
                     if (!href) return;
                     const url = new URL(href);
-                    if (!processedOrigins.has(url.origin) && (url.protocol === 'http:' || url.protocol === 'https:')) {
-                        if(doc.querySelector(`link[rel="preconnect"][href="${url.origin}"]`)) return;
-                        const preconnect = doc.createElement('link');
-                        preconnect.rel = 'preconnect';
-                        preconnect.href = url.origin;
-                        if (url.origin.includes('gstatic')) preconnect.setAttribute('crossorigin', '');
-                        doc.head.prepend(preconnect);
-                        processedOrigins.add(url.origin);
-                        hintCount++;
+
+                    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+                    const origin = url.origin;
+                    if (processedOrigins.has(origin)) return;
+
+                    let hintType: 'preconnect' | 'dns-prefetch' | null = null;
+
+                    if (highPriorityDomains.some(d => url.hostname.includes(d))) {
+                        hintType = 'preconnect';
+                    } else if (lowPriorityDomains.some(d => url.hostname.includes(d))) {
+                        hintType = 'dns-prefetch';
+                    } else {
+                        // Default for other domains
+                        hintType = 'dns-prefetch';
+                    }
+
+                    if (hintType) {
+                        if(doc.querySelector(`link[rel="${hintType}"][href="${origin}"]`)) return;
+
+                        const hint = doc.createElement('link');
+                        hint.rel = hintType;
+                        hint.href = origin;
+                        if (hintType === 'preconnect' && url.hostname.includes('gstatic')) {
+                            hint.setAttribute('crossorigin', '');
+                        }
+                        doc.head.prepend(hint);
+                        processedOrigins.add(origin);
+                        if (hintType === 'preconnect') preconnectCount++;
+                        else prefetchCount++;
                     }
                 } catch (e) { /* ignore invalid urls */ }
             });
-            if(hintCount > 0) {
-                actionLog.push(`Added ${hintCount} preconnect hint(s) for faster connections.`);
-                detailedMetrics.preconnectsAdded = hintCount;
+
+            if (preconnectCount > 0) {
+                actionLog.push(`Added ${preconnectCount} high-priority preconnect hint(s).`);
+                detailedMetrics.preconnectsAdded = (detailedMetrics.preconnectsAdded || 0) + preconnectCount;
+            }
+            if (prefetchCount > 0) {
+                actionLog.push(`Added ${prefetchCount} lower-priority dns-prefetch hint(s).`);
             }
         }
 
