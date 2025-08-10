@@ -294,6 +294,21 @@ const addResponsiveSrcset = (doc: Document): { imagesWithSrcset: number, dimensi
     return { imagesWithSrcset, dimensionsAdded };
 };
 
+declare const Terser: any;
+
+const loadTerser = () => {
+    return new Promise<void>((resolve, reject) => {
+        if (typeof Terser !== 'undefined') {
+            return resolve();
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/terser/dist/bundle.min.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Terser.'));
+        document.head.appendChild(script);
+    });
+};
+
 export const useCleaner = () => {
     const [isCleaning, setIsCleaning] = useState(false);
 
@@ -306,6 +321,8 @@ export const useCleaner = () => {
         setIsCleaning(true);
         const actionLog: string[] = [];
         const detailedMetrics: Omit<ImpactSummary, 'originalBytes' | 'cleanedBytes' | 'bytesSaved' | 'nodesRemoved' | 'estimatedSpeedGain' | 'actionLog'> = {};
+
+        const booleanAttributes = new Set(['allowfullscreen', 'async', 'autofocus', 'autoplay', 'checked', 'controls', 'default', 'defer', 'disabled', 'formnovalidate', 'inert', 'ismap', 'itemscope', 'loop', 'multiple', 'muted', 'nomodule', 'novalidate', 'open', 'playsinline', 'readonly', 'required', 'reversed', 'selected', 'truespeed']);
 
         onProgress?.({ step: 1, message: 'Applying AI recommendations...' });
         await delay(5000);
@@ -568,14 +585,18 @@ export const useCleaner = () => {
             if (effectiveOptions.preserveLinks && node.nodeName.toLowerCase() === 'a') continue;
             if (effectiveOptions.preserveShortcodes && node.nodeType === Node.TEXT_NODE && /\[.*?\]/.test(node.textContent || '')) continue;
             if (effectiveOptions.stripComments && node.nodeType === Node.COMMENT_NODE) {
-                nodesToRemove.push(node);
+                if (!/\[if.*\]/.test(node.textContent || '')) {
+                    nodesToRemove.push(node);
+                }
             }
             if (effectiveOptions.removeEmptyAttributes && node.nodeType === Node.ELEMENT_NODE) {
                 const element = node as Element;
                 const attrsToRemove: string[] = [];
                 for (let i = 0; i < element.attributes.length; i++) {
                     const attr = element.attributes[i];
-                    if (attr.value.trim() === '') attrsToRemove.push(attr.name);
+                    if (attr.value.trim() === '' && !booleanAttributes.has(attr.name.toLowerCase())) {
+                        attrsToRemove.push(attr.name);
+                    }
                 }
                 attrsToRemove.forEach(attrName => element.removeAttribute(attrName));
             }
@@ -590,11 +611,37 @@ export const useCleaner = () => {
         let finalHtml = `<!DOCTYPE html>\n` + doc.documentElement.outerHTML;
 
         if (effectiveOptions.minifyInlineCSSJS) {
-            // This is a placeholder for a proper minifier.
+            try {
+                await loadTerser();
+                const scripts = doc.querySelectorAll('script:not([src])');
+                let minifiedScripts = 0;
+                for (const script of Array.from(scripts)) {
+                    if (script.textContent) {
+                        const result = await Terser.minify(script.textContent);
+                        if (result.code) {
+                            script.textContent = result.code;
+                            minifiedScripts++;
+                        }
+                    }
+                }
+                if (minifiedScripts > 0) actionLog.push(`Minified ${minifiedScripts} inline script(s).`);
+
+                // As researched, a reliable and lightweight client-side CSS minifier is not readily available.
+                // Most robust solutions are build-time tools. We will skip inline CSS minification.
+                actionLog.push(`Skipped inline CSS minification (best performed at build-time).`);
+
+            } catch (error) {
+                console.error("Failed to minify inline JS:", error);
+                actionLog.push(`Failed to minify inline scripts due to an error.`);
+            }
         }
 
         if (effectiveOptions.collapseWhitespace) {
+            const originalLength = finalHtml.length;
             finalHtml = finalHtml.replace(/>\s+</g, '><').trim();
+            if (finalHtml.length < originalLength) {
+                actionLog.push('Collapsed whitespace between HTML tags.');
+            }
         }
 
         if (lazyElementsFound) {
