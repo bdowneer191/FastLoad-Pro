@@ -8,8 +8,8 @@ interface DetailedLogPageProps {
   sessions: Session[];
 }
 
-const ScoreDiff = ({ before, after }: { before: number, after: number }) => {
-    if (before === undefined || after === undefined) return null;
+const ScoreDiff = ({ before, after }: { before: number, after?: number }) => {
+    if (before === undefined || after === undefined) return <>{Math.round(before * 100)}</>;
     const diff = Math.round(after * 100) - Math.round(before * 100);
     const color = diff > 0 ? 'text-brand-success' : diff < 0 ? 'text-brand-danger' : 'text-brand-text-secondary';
     const sign = diff > 0 ? '+' : '';
@@ -34,9 +34,9 @@ const convertToCSV = (sessions: Session[]): string => {
             `"${s.url}"`,
             formatDuration(s.duration),
             Math.round(s.beforeScores.mobile * 100),
-            Math.round(s.afterScores.mobile * 100),
+            s.afterScores ? Math.round(s.afterScores.mobile * 100) : 'N/A',
             Math.round(s.beforeScores.desktop * 100),
-            Math.round(s.afterScores.desktop * 100)
+            s.afterScores ? Math.round(s.afterScores.desktop * 100) : 'N/A'
         ];
         return row.join(',');
     });
@@ -122,10 +122,10 @@ const DetailedLogPage: React.FC<DetailedLogPageProps> = ({ sessions }) => {
                 <td className="py-3 pr-2">{getDhakaDate(new Date(session.startTime))}</td>
                 <td className="py-3 px-2 truncate max-w-xs text-brand-accent-start" title={session.url}>{session.url}</td>
                 <td className="py-3 px-2 font-mono">{formatDuration(session.duration)}</td>
-                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.mobile} after={session.afterScores.mobile} /></td>
-                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.accessibility} after={session.afterScores.accessibility} /></td>
-                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.bestPractices} after={session.afterScores.bestPractices} /></td>
-                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.seo} after={session.afterScores.seo} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.mobile} after={session.afterScores?.mobile} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.accessibility} after={session.afterScores?.accessibility} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.bestPractices} after={session.afterScores?.bestPractices} /></td>
+                <td className="py-3 pl-2"><ScoreDiff before={session.beforeScores.seo} after={session.afterScores?.seo} /></td>
               </tr>
             ))}
           </tbody>
